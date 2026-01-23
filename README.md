@@ -25,7 +25,7 @@ uvicorn app.main:app --reload
   "iphone_name": "iphone 15",
   "capacity": 256,
   "weight": 180,
-  "display": 6.7
+  "display": 7.0
 }
 
 - PUT /iphones/{id}  
