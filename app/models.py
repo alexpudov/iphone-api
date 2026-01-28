@@ -5,26 +5,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
 
-class Iphone(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    iphone_name: str = Field(
-        min_length=3,
-        max_length=30,
-        description="Model name"
-    )
-    capacity: int = Field(
-        gt=0,
-        le=1024
-    )
-    weight: int = Field(
-        gt=0,
-        le=500
-    )
-    display: float = Field(
-        ge=4.0,
-        le=8.0
-    )
-
+from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy.orm import relationship
+from datetime import datetime
 
 
 class Doctor(Base):
@@ -34,3 +17,22 @@ class Doctor(Base):
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
     specialization: Mapped[str] = mapped_column(String(60), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+
+class Slot(Base):
+    __tablename__ = "slots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    doctor_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("doctors.id"), nullable=False
+    )
+
+    start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    is_booked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    doctor = relationship("Doctor", backref="slots")
+
+ 
