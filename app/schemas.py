@@ -35,3 +35,15 @@ class SlotOut(BaseModel):
     end_time: datetime
     is_booked: bool
 
+class AppointmentCreate(BaseModel):
+    slot_id: int
+    patient_name: str
+
+
+class AppointmentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    slot_id: int
+    patient_name: str
+    created_at: datetime

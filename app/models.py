@@ -1,4 +1,3 @@
-from pydantic import BaseModel, Field, ConfigDict
 
 from sqlalchemy import Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -34,5 +33,23 @@ class Slot(Base):
     is_booked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     doctor = relationship("Doctor", backref="slots")
+
+class Appointment(Base):
+    __tablename__ = "appointments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    slot_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("slots.id"), nullable=False, unique=True
+    )
+
+    patient_name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+
+    slot = relationship("Slot", backref="appointments")
+    
 
  
