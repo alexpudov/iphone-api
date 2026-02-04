@@ -30,8 +30,6 @@ class Slot(Base):
     start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
-    is_booked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-
     doctor = relationship("Doctor", backref="slots")
 
 class Appointment(Base):

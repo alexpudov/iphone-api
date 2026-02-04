@@ -33,7 +33,7 @@ class SlotOut(BaseModel):
     doctor_id: int
     start_time: datetime
     end_time: datetime
-    is_booked: bool
+ 
 
 class AppointmentCreate(BaseModel):
     slot_id: int

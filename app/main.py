@@ -6,6 +6,7 @@ from app.models import Doctor, Slot,Appointment
 from app.schemas import DoctorCreate, DoctorOut,SlotCreate,SlotOut,AppointmentCreate, AppointmentOut
 
 from datetime import date, datetime, time
+from sqlalchemy import select
 
 
 
@@ -81,31 +82,32 @@ def create_slot(payload: SlotCreate, db: Session = Depends(get_db)):
 
 
 
+from sqlalchemy import select
+from datetime import date, datetime, time
+
 @app.get("/doctors/{doctor_id}/slots", response_model=list[SlotOut])
 def get_slots(
     doctor_id: int,
-    date_: date | None = None,          
-    only_free: bool = False,            
+    date_: date | None = None,
+    only_free: bool = False,
     db: Session = Depends(get_db),
 ):
-
-    doctor_slot = db.query(Slot).filter(Slot.doctor_id == doctor_id)
+  
+    q = db.query(Slot).filter(Slot.doctor_id == doctor_id)
 
 
     if date_ is not None:
-        start_dt = datetime.combine(date_, time.min) 
-        end_dt = datetime.combine(date_, time.max)   
-        doctor_slot = doctor_slot.filter(Slot.start_time >= start_dt, Slot.start_time <= end_dt)
+        start_dt = datetime.combine(date_, time.min)
+        end_dt = datetime.combine(date_, time.max)
+        q = q.filter(Slot.start_time >= start_dt, Slot.start_time <= end_dt)
 
+  
     if only_free:
-        doctor_slot = doctor_slot.filter(Slot.is_booked == False)
-        
-    slots = doctor_slot.order_by(Slot.start_time).all()
+        booked_slot_ids = select(Appointment.slot_id)
+        q = q.filter(~Slot.id.in_(booked_slot_ids))  
 
-    if date_ is not None and not slots:
-        raise HTTPException(status_code=404, detail="No slots for this date")
+    return q.order_by(Slot.start_time).all()
 
-    return slots
 
 @app.delete("/slots/{slot_id}")
 def delete_slot(slot_id: int, db: Session = Depends(get_db)):
@@ -124,15 +126,13 @@ def delete_slot(slot_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/appointments", response_model=AppointmentOut, status_code=201)
-def create_appointment(
-    payload: AppointmentCreate,
-    db: Session = Depends(get_db),
-):
+def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)):
     slot = db.query(Slot).filter(Slot.id == payload.slot_id).first()
     if not slot:
         raise HTTPException(status_code=404, detail="Slot not found")
 
-    if slot.is_booked:
+    existing = db.query(Appointment).filter(Appointment.slot_id == payload.slot_id).first()
+    if existing:
         raise HTTPException(status_code=409, detail="Slot already booked")
 
     appointment = Appointment(
@@ -140,13 +140,11 @@ def create_appointment(
         patient_name=payload.patient_name,
     )
 
-    slot.is_booked = True  
-
     db.add(appointment)
     db.commit()
     db.refresh(appointment)
-
     return appointment
+
 
 @app.get("/appointments")
 def list_appointments(db: Session = Depends(get_db)):
@@ -155,24 +153,15 @@ def list_appointments(db: Session = Depends(get_db)):
 
 @app.delete("/appointments/{appointment_id}")
 def delete_appointment(appointment_id: int, db: Session = Depends(get_db)):
-    appointment = (
-        db.query(Appointment)
-        .filter(Appointment.id == appointment_id)
-        .first()
-    )
-
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
 
-    slot = db.query(Slot).filter(Slot.id == appointment.slot_id).first()
-    if not slot:
-        raise HTTPException(status_code=500, detail="Slot linked to appointment not found")
-
-    slot.is_booked = False
     db.delete(appointment)
     db.commit()
-
     return {"status": "appointment cancelled"}
+
+
 
 
     
