@@ -1,0 +1,75 @@
+from datetime import date, datetime, time
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.db import get_db
+from app.models import Doctor, Slot, Appointment
+from app.schemas import SlotCreate, SlotOut
+
+router = APIRouter(prefix="/slots", tags=["Slots"])
+
+
+@router.post("", response_model=SlotOut, status_code=201)
+def create_slot(payload: SlotCreate, db: Session = Depends(get_db)):
+    doctor = db.query(Doctor).filter(Doctor.id == payload.doctor_id).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    if payload.end_time <= payload.start_time:
+        raise HTTPException(status_code=400, detail="end_time must be after start_time")
+
+    if payload.start_time < datetime.now():
+        raise HTTPException(status_code=400, detail="Cannot create slot in the past")
+
+    conflict = (
+        db.query(Slot)
+        .filter(Slot.doctor_id == payload.doctor_id)
+        .filter(Slot.start_time < payload.end_time, Slot.end_time > payload.start_time)
+        .first()
+    )
+    if conflict:
+        raise HTTPException(status_code=409, detail="Slot overlaps with existing slot")
+
+    slot = Slot(**payload.model_dump())
+    db.add(slot)
+    db.commit()
+    db.refresh(slot)
+    return slot
+
+
+@router.delete("/{slot_id}")
+def delete_slot(slot_id: int, db: Session = Depends(get_db)):
+    slot = db.query(Slot).filter(Slot.id == slot_id).first()
+    if not slot:
+        raise HTTPException(status_code=404, detail="Slot not found")
+
+    appointment = db.query(Appointment).filter(Appointment.slot_id == slot_id).first()
+    if appointment:
+        raise HTTPException(status_code=409, detail="Slot has appointment, cannot delete")
+
+    db.delete(slot)
+    db.commit()
+    return {"status": "slot deleted"}
+
+@router.get("/doctor/{doctor_id}", response_model=list[SlotOut])
+def get_slots_for_doctor(
+    doctor_id: int,
+    date_: date | None = None,
+    only_free: bool = False,
+    db: Session = Depends(get_db),
+):
+    q = db.query(Slot).filter(Slot.doctor_id == doctor_id)
+
+    if date_ is not None:
+        start_dt = datetime.combine(date_, time.min)
+        end_dt = datetime.combine(date_, time.max)
+        q = q.filter(Slot.start_time >= start_dt, Slot.start_time <= end_dt)
+
+    if only_free:
+        booked_slot_ids = select(Appointment.slot_id)
+        q = q.filter(~Slot.id.in_(booked_slot_ids))
+
+    return q.order_by(Slot.start_time).all()
+

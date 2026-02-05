@@ -44,7 +44,7 @@ class Appointment(Base):
     patient_name: Mapped[str] = mapped_column(String(100), nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
+        DateTime, default=datetime.now(), nullable=False
     )
 
     slot = relationship("Slot", backref="appointments")
