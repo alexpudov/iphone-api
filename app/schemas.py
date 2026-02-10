@@ -1,4 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
+from datetime import datetime
+from typing import Optional
 
 
 class DoctorCreate(BaseModel):
@@ -17,7 +19,12 @@ class DoctorOut(BaseModel):
     specialization: str
     is_active: bool
 
-from datetime import datetime
+class DoctorUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    full_name: str | None = None
+    specialization: str | None = None
+    is_active: bool | None = None
 
 
 class SlotCreate(BaseModel):

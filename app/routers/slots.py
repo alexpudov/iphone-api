@@ -22,6 +22,12 @@ def create_slot(payload: SlotCreate, db: Session = Depends(get_db)):
 
     if payload.start_time < datetime.now():
         raise HTTPException(status_code=400, detail="Cannot create slot in the past")
+    
+    if not doctor.is_active:
+        raise HTTPException(
+        status_code=409,
+        detail="Doctor is not active"
+    )
 
     conflict = (
         db.query(Slot)

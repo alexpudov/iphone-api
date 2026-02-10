@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Appointment, Slot
+from app.models import Appointment, Slot, Doctor
 from app.schemas import AppointmentCreate, AppointmentOut
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
@@ -15,11 +15,19 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
     slot = db.query(Slot).filter(Slot.id == payload.slot_id).first()
     if not slot:
         raise HTTPException(status_code=404, detail="Slot not found")
+    
+    doctor = db.query(Doctor).filter(Doctor.id == slot.doctor_id).first()
+    if not doctor or not doctor.is_active:
+        raise HTTPException(
+        status_code=409,
+        detail="Doctor is not active"
+    )
 
     if slot.start_time < datetime.now():
         raise HTTPException(status_code=400, detail="Cannot book slot in the past")
 
     existing = db.query(Appointment).filter(Appointment.slot_id == payload.slot_id).first()
+
     if existing:
         raise HTTPException(status_code=409, detail="Slot already booked")
 
