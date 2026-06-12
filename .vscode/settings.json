@@ -1,0 +1,25 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": [],
+
+
+  "terminal.integrated.profiles.windows": {
+    "Backend": {
+      "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "cd 'C:\\Users\\Sashka\\Desktop\\test_project\\backend'; . '.\\venv\\Scripts\\Activate.ps1'"
+      ]
+    },
+    "Frontend": {
+      "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "cd 'C:\\Users\\Sashka\\Desktop\\test_project\\frontend'"
+      ]
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "Backend"
+}
