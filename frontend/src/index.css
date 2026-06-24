@@ -66,3 +66,67 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.checkbox-filter {
+  gap: 3px;
+}
+
+.filter-item input,
+.filter-item select {
+  cursor: pointer;
+}
+
+.filter-item select {
+  min-width: 140px;
+  padding: 6px 10px;
+  font-size: 15px;
+}
+.doctor-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.doctor-form input[type="text"] {
+  padding: 6px 10px;
+  font-size: 15px;
+}
+
+.doctor-form button {
+  padding: 7px 14px;
+  cursor: pointer;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pagination button {
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
