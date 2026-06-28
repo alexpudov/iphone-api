@@ -1,185 +1,133 @@
 import { useEffect, useState } from "react";
-import type { Doctor, DoctorFilters, DoctorCreate} from "./types/doctors";
-import { fetchDoctors, createDoctor } from "./api/api";
+import type {
+  Doctor,
+  DoctorCreate,
+  DoctorFilters as DoctorFiltersType,
+} from "./types/doctors";
+import { createDoctor, fetchDoctors } from "./api/api";
+import { DoctorCreateForm } from "./components/DoctorCreateForm";
+import { DoctorFilters } from "./components/DoctorFilters";
+import { DoctorList } from "./components/DoctorList";
+import { Pagination } from "./components/Pagination";
+
+function validateText(value: string, fieldName: string) {
+  if (!value.trim()) {
+    return `${fieldName} is required`;
+  }
+
+  if (/\s{2,}/.test(value)) {
+    return "Only one space is allowed between words";
+  }
+
+  return "";
+}
+
+function validateDoctor(doctor: DoctorCreate) {
+  return {
+    full_name: validateText(doctor.full_name, "Full name"),
+    specialization: validateText(doctor.specialization, "Specialization"),
+  };
+}
 
 export default function App() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [showCreateErrors, setShowCreateErrors] = useState(false);
 
-  const [filters, setFilters] = useState<DoctorFilters>({
+  const [filters, setFilters] = useState<DoctorFiltersType>({
     specialization: "",
-    limit: 2,
+    limit: 10,
     offset: 0,
-});
+  });
 
   const [newDoctor, setNewDoctor] = useState<DoctorCreate>({
-  full_name: "",
-  specialization: "",
-  is_active: true,
-});
+    full_name: "",
+    specialization: "",
+    is_active: true,
+  });
 
-const [hasNextPage, setHasNextPage] = useState(false);
+  useEffect(() => {
+    const limit = filters.limit ?? 20;
 
-    useEffect(() => {
-      const limit = filters.limit ?? 20;
-      fetchDoctors({
-  ...filters,
-  limit: limit + 1,
-})
-  .then((data) => {
-    setDoctors(data.slice(0, limit));
-    setHasNextPage(data.length > limit);
-    setError(null);
-  })
-  .catch((e) => setError(e.message));
-    }, [filters]);
-  
-    function handleCreateDoctor(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault();
-
-  createDoctor(newDoctor)
-    .then((createdDoctor) => {
-      setDoctors([createdDoctor, ...doctors]);
-      setNewDoctor({
-        full_name: "",
-        specialization: "",
-        is_active: true,
-      });
-      setError(null);
+    fetchDoctors({
+      ...filters,
+      limit: limit + 1,
     })
-    .catch((e) => setError(e.message));
-}
+      .then((data) => {
+        setDoctors(data.slice(0, limit));
+        setHasNextPage(data.length > limit);
+        setError(null);
+      })
+      .catch((e) => setError(e.message));
+  }, [filters]);
 
-const currentPage = (filters.offset ?? 0) / (filters.limit ?? 20) + 1;
+  const formErrors = validateDoctor(newDoctor);
+
+  const isCreateFormValid =
+    !formErrors.full_name && !formErrors.specialization;
+
+  function handleCreateDoctor(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    setShowCreateErrors(true);
+
+    if (!isCreateFormValid) {
+      return;
+    }
+
+    createDoctor(newDoctor)
+      .then((createdDoctor) => {
+        setDoctors((prevDoctors) => [createdDoctor, ...prevDoctors]);
+        setNewDoctor({
+          full_name: "",
+          specialization: "",
+          is_active: true,
+        });
+        setShowCreateErrors(false);
+        setError(null);
+      })
+      .catch((e) => setError(e.message));
+  }
+
+  const limit = filters.limit ?? 20;
+  const offset = filters.offset ?? 0;
+  const currentPage = offset / limit + 1;
 
   return (
     <div className="container">
-
       <h1>Doctors</h1>
 
-      <form className="doctor-form" onSubmit={handleCreateDoctor}>
-  <input
-    type="text"
-    placeholder="Full name"
-    value={newDoctor.full_name}
-    onChange={(e) =>
-      setNewDoctor({
-        ...newDoctor,
-        full_name: e.target.value,
-      })
-    }
-  />
+      <DoctorCreateForm
+        newDoctor={newDoctor}
+        formErrors={
+          showCreateErrors
+            ? formErrors
+            : { full_name: "", specialization: "" }
+        }
+        isValid={true}
+        onChange={setNewDoctor}
+        onSubmit={handleCreateDoctor}
+      />
 
-  <input
-    type="text"
-    placeholder="Specialization"
-    value={newDoctor.specialization}
-    onChange={(e) =>
-      setNewDoctor({
-        ...newDoctor,
-        specialization: e.target.value,
-      })
-    }
-  />
-
-  <label className="filter-item">
-    <input
-      type="checkbox"
-      checked={newDoctor.is_active}
-      onChange={(e) =>
-        setNewDoctor({
-          ...newDoctor,
-          is_active: e.target.checked,
-        })
-      }
-    />
-    Active
-  </label>
-
-  <button type="submit">Add doctor</button>
-</form>
-
-    <div className="filters">
-
-      <label className="filter-item checkbox-filter">
-        <input
-          type="checkbox"
-          checked={filters.active === true}
-          onChange={(e) =>
-            setFilters({
-              ...filters,
-              active: e.target.checked ? true : undefined,
-              offset: 0,
-            })
-          }
-        />
-        <span>Only active</span>
-      </label>
-
-      <label className="filter-item">
-        <span>Specialization</span>
-        <select
-          value={filters.specialization}
-          onChange={(e) =>
-            setFilters({
-              ...filters,
-              specialization: e.target.value,
-              offset: 0,
-            })
-          }
-        >
-          <option value="">All</option>
-          <option value="Dantist">Dantist</option>
-          <option value="Cardiologist">Cardiologist</option>
-        </select>
-      </label>
-    </div>
+      <DoctorFilters filters={filters} onChange={setFilters} />
 
       {error && <p className="error">{error}</p>}
 
-      {!error && (
-        <ul>
-          {doctors.map((doctor) => (
-            <li key={doctor.id}>
-              <b>{doctor.full_name}</b> — {doctor.specialization} —{" "}
-              {doctor.is_active ? "active" : "inactive"}
-            </li>
-          ))}
-        </ul>
-      )}
+      <DoctorList doctors={doctors} />
 
-  <div className="pagination">
-      <button
-        disabled={(filters.offset ?? 0) === 0}
-        onClick={() =>
+      <Pagination
+        currentPage={currentPage}
+        hasNextPage={hasNextPage}
+        offset={offset}
+        limit={limit}
+        onChangeOffset={(newOffset) =>
           setFilters({
             ...filters,
-            offset: Math.max((filters.offset ?? 0) - (filters.limit ?? 20), 0),
+            offset: newOffset,
           })
         }
-      >
-        Previous
-      </button>
-
-      <span>Page {currentPage}</span>
-
-    <button
-  disabled={!hasNextPage}
-  onClick={() =>
-    setFilters({
-      ...filters,
-      offset: (filters.offset ?? 0) + (filters.limit ?? 20),
-    })
-  }
->
-  Next
-</button>
-
-  </div>
-
+      />
     </div>
-
-    
   );
-  
 }
