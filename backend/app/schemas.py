@@ -24,6 +24,9 @@ class DoctorCreate(BaseModel):
 
         if re.search(r"\s{2,}", value):
             raise ValueError("Only one space is allowed between words")
+        
+        if not all(char.isalpha() or char.isspace() for char in value):
+            raise ValueError("Only letters and spaces are allowed")
 
         return value
 
@@ -33,7 +36,7 @@ class DoctorOut(BaseModel):
 
     id: int
     full_name: str
-    specialization: str
+    specialization: str 
     is_active: bool
 
 class DoctorUpdate(BaseModel):

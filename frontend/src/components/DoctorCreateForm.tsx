@@ -33,12 +33,12 @@ export function DoctorCreateForm({
   onChange={(e) => {
     const value = e.target.value;
 
-    if (/^[\p{L}\s]*$/u.test(value)) {
+    if (/^[\p{L}\s]*$/u.test(value)) 
       onChange({
         ...newDoctor,
         full_name: value,
       });
-    }
+    
   }}
 />
 </div>

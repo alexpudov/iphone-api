@@ -2,6 +2,7 @@ import type { Doctor, DoctorFilters, DoctorCreate } from "../types/doctors";
 
 const API_BASE = "http://127.0.0.1:8000";
 
+//Get doctors
 export async function fetchDoctors(
   params?: DoctorFilters
 
@@ -51,3 +52,15 @@ export async function createDoctor(payload: DoctorCreate): Promise<Doctor> {
 
   return response.json();
 }
+
+// Get doctor by ID
+export async function fetchDoctorById(id: number): Promise<Doctor> {
+  const response = await fetch(`${API_BASE}/doctors/${id}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch doctor: ${response.status}`);
+  }
+
+  return response.json();
+}
+
