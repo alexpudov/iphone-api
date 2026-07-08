@@ -1,4 +1,5 @@
-import type { Doctor, DoctorFilters, DoctorCreate } from "../types/doctors";
+import type { Doctor, DoctorFilters, DoctorCreate,  DoctorUpdate, Slot} from "../types/doctors";
+
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -63,4 +64,34 @@ export async function fetchDoctorById(id: number): Promise<Doctor> {
 
   return response.json();
 }
+// Patch doctor
+export async function updateDoctor(
+  id: number,
+  payload: DoctorUpdate
+): Promise<Doctor> {
+  const response = await fetch(`${API_BASE}/doctors/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 
+  if (!response.ok) {
+    throw new Error(`Failed to update doctor: ${response.status}`);
+  }
+
+  return response.json();
+}
+// Get slots
+export async function getDoctorSlots(
+  doctorId: number
+): Promise<Slot[]> {
+  const response = await fetch(`${API_BASE}/slots/doctor/${doctorId}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch doctor slots: ${response.status}`);
+  }
+
+  return response.json();
+}

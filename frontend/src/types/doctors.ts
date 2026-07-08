@@ -17,3 +17,12 @@ export type DoctorCreate = {
   specialization: string;
   is_active: boolean;
 };
+
+export type DoctorUpdate = Partial<DoctorCreate>;
+
+export type Slot = {
+  id: number;
+  doctor_id: number;
+  start_time: string;
+  end_time: string;
+};

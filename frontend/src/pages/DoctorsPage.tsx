@@ -10,6 +10,8 @@ import { DoctorFilters } from "../components/DoctorFilters";
 import { DoctorList } from "../components/DoctorList";
 import { Pagination } from "../components/Pagination";
 
+
+
 function validateText(value: string, fieldName: string) {
   if (!value.trim()) {
     return `${fieldName} is required`;
@@ -31,7 +33,8 @@ function validateDoctor(doctor: DoctorCreate) {
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [showCreateErrors, setShowCreateErrors] = useState(false);
 
@@ -57,9 +60,9 @@ export default function DoctorsPage() {
       .then((data) => {
         setDoctors(data.slice(0, limit));
         setHasNextPage(data.length > limit);
-        setError(null);
+        setLoadError(null);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => setLoadError(e.message));
   }, [filters]);
 
   const formErrors = validateDoctor(newDoctor);
@@ -85,9 +88,9 @@ export default function DoctorsPage() {
           is_active: true,
         });
         setShowCreateErrors(false);
-        setError(null);
+        setCreateError(null);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => setCreateError(e.message));
   }
 
   const limit = filters.limit ?? 20;
@@ -98,6 +101,8 @@ export default function DoctorsPage() {
     <div className="container">
       <h1>Doctors</h1>
 
+      {createError && <p className="error">{createError}</p>}
+
       <DoctorCreateForm
         newDoctor={newDoctor}
         formErrors={
@@ -105,14 +110,14 @@ export default function DoctorsPage() {
             ? formErrors
             : { full_name: "", specialization: "" }
         }
-        isValid={true}
+        isValid={isCreateFormValid}
         onChange={setNewDoctor}
         onSubmit={handleCreateDoctor}
       />
 
       <DoctorFilters filters={filters} onChange={setFilters} />
 
-      {error && <p className="error">{error}</p>}
+      {loadError && <p className="error">{loadError}</p>}
 
       <DoctorList doctors={doctors} />
 
@@ -122,9 +127,10 @@ export default function DoctorsPage() {
         offset={offset}
         limit={limit}
         onChangeOffset={(newOffset) =>
-          setFilters({
-            offset: newOffset,
-          })
+          setFilters((prevFilters) => ({
+              ...prevFilters,
+              offset: newOffset,
+        }))
         }
       />
     </div>

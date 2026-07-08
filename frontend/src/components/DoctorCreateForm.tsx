@@ -30,6 +30,8 @@ export function DoctorCreateForm({
   type="text"
   placeholder="Full name"
   value={newDoctor.full_name}
+  minLength={2}
+  maxLength={50}
   onChange={(e) => {
     const value = e.target.value;
 
@@ -53,6 +55,8 @@ export function DoctorCreateForm({
   type="text"
   placeholder="Specialization"
   value={newDoctor.specialization}
+  minLength={2}
+  maxLength={50}
   onChange={(e) => {
     const value = e.target.value;
 
@@ -65,22 +69,33 @@ export function DoctorCreateForm({
   }}
 />
 </div>
+    
+    <div className="form-field">
+  <span className="field-error">&nbsp;</span>
 
-    <label className="filter-item">
-      <input
-        type="checkbox"
-        checked={newDoctor.is_active}
-        onChange={(e) =>
-          onChange({
-            ...newDoctor,
-            is_active: e.target.checked,
-          })
-        }
-      />
-      Active
-    </label>
+  <label className="filter-item">
+    <input
+      type="checkbox"
+      checked={newDoctor.is_active}
+      onChange={(e) =>
+        onChange({
+          ...newDoctor,
+          is_active: e.target.checked,
+        })
+      }
+    />
+    Active
+  </label>
+</div>
 
-    <button type="submit" disabled={!isValid}>Add doctor</button>
+<div className="form-field">
+  <span className="field-error">&nbsp;</span>
+
+  <button type="submit" disabled={!isValid}>
+    Add doctor
+  </button>
+</div>
+    
   </form>
 );
 }
