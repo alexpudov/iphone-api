@@ -26,3 +26,9 @@ export type Slot = {
   start_time: string;
   end_time: string;
 };
+
+export type SlotCreate = {
+  doctor_id: number;
+  start_time: string;
+  end_time: string;
+};

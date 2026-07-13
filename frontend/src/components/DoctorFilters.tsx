@@ -5,7 +5,7 @@ type DoctorFiltersProps = {
   onChange: (filters: DoctorFiltersType) => void;
 };
 
-export function DoctorFilters({ filters, onChange }: DoctorFiltersProps) {
+export function DoctorFiltersComponent({ filters, onChange }: DoctorFiltersProps) {
   return (
     <div className="filters">
       <label className="filter-item checkbox-filter">
@@ -36,8 +36,15 @@ export function DoctorFilters({ filters, onChange }: DoctorFiltersProps) {
           }
         >
           <option value="">All</option>
-          <option value="Dantist">Dantist</option>
+          <option value="Pediatrician">Pediatrician</option>
+          <option value="Dermatologist">Dermatologist </option>
+          <option value="Neurologist">Neurologist </option>
+          <option value="Orthopedic Surgeon">Orthopedic Surgeon </option>
           <option value="Cardiologist">Cardiologist</option>
+          <option value="Gynecologist">Gynecologist </option>
+          <option value="Ophthalmologist">Ophthalmologist  </option>
+          <option value="Pediatrician">Pediatrician </option>
+
         </select>
       </label>
     </div>

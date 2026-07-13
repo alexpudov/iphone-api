@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -15,13 +15,35 @@ router = APIRouter(prefix="/slots", tags=["Slots"])
 def create_slot(payload: SlotCreate, db: Session = Depends(get_db)):
     doctor = db.query(Doctor).filter(Doctor.id == payload.doctor_id).first()
     if not doctor:
-        raise HTTPException(status_code=404, detail="Doctor not found")
+        raise HTTPException(
+            status_code=404, 
+            detail="Doctor not found")
 
     if payload.end_time <= payload.start_time:
-        raise HTTPException(status_code=400, detail="end_time must be after start_time")
+        raise HTTPException(
+            status_code=400,
+            detail="End time must be after start time")
+    
+    minimum_slot_duration = timedelta(minutes = 15)
+
+    if payload.end_time - payload.start_time < minimum_slot_duration:
+        raise HTTPException(
+            status_code=400,
+            detail="Slot duration must be at least 15 minutes"
+        )
+    
+    maximum_slot_duration = timedelta(hours = 1)
+
+    if payload.end_time - payload.start_time > maximum_slot_duration:
+        raise HTTPException(
+            status_code=400,
+            detail="Slot duration must not exceed one hour"
+        )
 
     if payload.start_time < datetime.now():
-        raise HTTPException(status_code=400, detail="Cannot create slot in the past")
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot create slot in the past")
     
     if not doctor.is_active:
         raise HTTPException(

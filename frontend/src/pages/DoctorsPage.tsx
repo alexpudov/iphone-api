@@ -1,77 +1,140 @@
-import { useEffect, useState } from "react";
-import type {
-  Doctor,
-  DoctorCreate,
-  DoctorFilters as DoctorFiltersType,
-} from "../types/doctors";
-import { createDoctor, fetchDoctors } from "../api/api";
-import { DoctorCreateForm } from "../components/DoctorCreateForm";
-import { DoctorFilters } from "../components/DoctorFilters";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+
+import {
+  createDoctor,
+  fetchDoctors,
+} from "../api/api";
+
+import { DoctorCreateForm}  from "../components/DoctorCreateForm";
+import { DoctorFiltersComponent } from "../components/DoctorFilters";
 import { DoctorList } from "../components/DoctorList";
 import { Pagination } from "../components/Pagination";
 
-
-
-function validateText(value: string, fieldName: string) {
-  if (!value.trim()) {
-    return `${fieldName} is required`;
-  }
-
-  if (/\s{2,}/.test(value)) {
-    return "Only one space is allowed between words";
-  }
-
-  return "";
-}
-
-function validateDoctor(doctor: DoctorCreate) {
-  return {
-    full_name: validateText(doctor.full_name, "Full name"),
-    specialization: validateText(doctor.specialization, "Specialization"),
-  };
-}
+import type {
+  Doctor,
+  DoctorCreate,
+  DoctorFilters,
+} from "../types/doctors";
 
 export default function DoctorsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(false);
+
   const [loadError, setLoadError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [hasNextPage, setHasNextPage] = useState(false);
-  const [showCreateErrors, setShowCreateErrors] = useState(false);
-
-  const [filters, setFilters] = useState<DoctorFiltersType>({
-    specialization: "",
-    limit: 10,
-    offset: 0,
-  });
 
   const [newDoctor, setNewDoctor] = useState<DoctorCreate>({
     full_name: "",
     specialization: "",
-    is_active: false,
+    is_active: true,
   });
 
+  const [showCreateErrors, setShowCreateErrors] = useState(false);
+
+  const filters: DoctorFilters = useMemo(
+    () => ({
+      specialization: searchParams.get("specialization") ?? "",
+
+      active:
+        searchParams.get("active") === "true"
+          ? true
+          : undefined,
+
+      limit: Number(searchParams.get("limit")) || 10,
+
+      offset: Number(searchParams.get("offset")) || 0,
+    }),
+    [searchParams]
+  );
+
+  const limit = filters.limit ?? 10;
+  const offset = filters.offset ?? 0;
+
+  const currentPage = Math.floor(offset / limit) + 1;
+
+  const formErrors = {
+    full_name: validateTextField(newDoctor.full_name),
+    specialization: validateTextField(newDoctor.specialization),
+  };
+
+  const isCreateFormValid =
+    !formErrors.full_name &&
+    !formErrors.specialization;
+
   useEffect(() => {
-    const limit = filters.limit ?? 20;
+    let ignore = false;
 
     fetchDoctors({
       ...filters,
       limit: limit + 1,
     })
       .then((data) => {
+        if (ignore) {
+          return;
+        }
+
         setDoctors(data.slice(0, limit));
         setHasNextPage(data.length > limit);
         setLoadError(null);
       })
-      .catch((e) => setLoadError(e.message));
-  }, [filters]);
+      .catch((error: unknown) => {
+        if (ignore) {
+          return;
+        }
 
-  const formErrors = validateDoctor(newDoctor);
+        setLoadError(getErrorMessage(error));
+      });
 
-  const isCreateFormValid =
-    !formErrors.full_name && !formErrors.specialization;
+    return () => {
+      ignore = true;
+    };
+  }, [filters, limit]);
 
-  function handleCreateDoctor(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function updateFilters(
+    changedFilters: Partial<DoctorFilters>
+  ) {
+    const updatedFilters: DoctorFilters = {
+      ...filters,
+      ...changedFilters,
+    };
+
+    const params = new URLSearchParams();
+
+    if (updatedFilters.specialization) {
+      params.set(
+        "specialization",
+        updatedFilters.specialization
+      );
+    }
+
+    if (updatedFilters.active === true) {
+      params.set("active", "true");
+    }
+
+    if (updatedFilters.limit !== undefined) {
+      params.set(
+        "limit",
+        String(updatedFilters.limit)
+      );
+    }
+
+    if (updatedFilters.offset !== undefined) {
+      params.set(
+        "offset",
+        String(updatedFilters.offset)
+      );
+    }
+
+    setSearchParams(params);
+  }
+
+  function handleCreateDoctor(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
 
     setShowCreateErrors(true);
 
@@ -79,45 +142,70 @@ export default function DoctorsPage() {
       return;
     }
 
-    createDoctor(newDoctor)
+    createDoctor({
+      full_name: newDoctor.full_name.trim(),
+      specialization:
+        newDoctor.specialization.trim(),
+      is_active: newDoctor.is_active,
+    })
       .then((createdDoctor) => {
-        setDoctors((prevDoctors) => [createdDoctor, ...prevDoctors]);
+        setDoctors((previousDoctors) => [
+          createdDoctor,
+          ...previousDoctors,
+        ]);
+
         setNewDoctor({
           full_name: "",
           specialization: "",
           is_active: true,
         });
+
         setShowCreateErrors(false);
         setCreateError(null);
       })
-      .catch((e) => setCreateError(e.message));
-  }
+      .catch((error: unknown) => {
+        setCreateError(getErrorMessage(error));
+      });
 
-  const limit = filters.limit ?? 20;
-  const offset = filters.offset ?? 0;
-  const currentPage = offset / limit + 1;
+    
+  }
 
   return (
     <div className="container">
       <h1>Doctors</h1>
 
-      {createError && <p className="error">{createError}</p>}
+      {createError && (
+        <p className="error">{createError}</p>
+      )}
 
       <DoctorCreateForm
         newDoctor={newDoctor}
         formErrors={
           showCreateErrors
             ? formErrors
-            : { full_name: "", specialization: "" }
+            : {
+                full_name: "",
+                specialization: "",
+              }
         }
         isValid={isCreateFormValid}
         onChange={setNewDoctor}
         onSubmit={handleCreateDoctor}
       />
 
-      <DoctorFilters filters={filters} onChange={setFilters} />
+      <DoctorFiltersComponent
+        filters={filters}
+        onChange={(changedFilters) =>
+          updateFilters({
+            ...changedFilters,
+            offset: 0,
+          })
+        }
+      />
 
-      {loadError && <p className="error">{loadError}</p>}
+      {loadError && (
+        <p className="error">{loadError}</p>
+      )}
 
       <DoctorList doctors={doctors} />
 
@@ -127,12 +215,37 @@ export default function DoctorsPage() {
         offset={offset}
         limit={limit}
         onChangeOffset={(newOffset) =>
-          setFilters((prevFilters) => ({
-              ...prevFilters,
-              offset: newOffset,
-        }))
+          updateFilters({
+            offset: newOffset,
+          })
         }
       />
     </div>
   );
+}
+
+function validateTextField(value: string): string {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return "Field cannot be empty";
+  }
+
+  if (!/^[\p{L}\s]+$/u.test(trimmedValue)) {
+    return "Only letters and spaces are allowed";
+  }
+
+  if (/\s{2,}/.test(trimmedValue)) {
+    return "Only one space is allowed between words";
+  }
+
+  return "";
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Something went wrong";
 }

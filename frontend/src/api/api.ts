@@ -1,7 +1,45 @@
-import type { Doctor, DoctorFilters, DoctorCreate,  DoctorUpdate, Slot} from "../types/doctors";
+import type { Doctor, DoctorFilters, DoctorCreate,  DoctorUpdate, Slot, SlotCreate} from "../types/doctors";
 
 
 const API_BASE = "http://127.0.0.1:8000";
+
+
+type ValidationErrorItem = {
+  loc?: Array<string | number>;
+  msg?: string;
+};
+
+type ApiErrorResponse = {
+  detail?: string | ValidationErrorItem[];
+};
+
+async function getApiErrorMessage(
+  response: Response,
+  fallbackMessage: string
+): Promise<string> {
+  try {
+    const errorData = (await response.json()) as ApiErrorResponse;
+
+    if (typeof errorData.detail === "string") {
+      return errorData.detail;
+    }
+
+    if (Array.isArray(errorData.detail)) {
+      return errorData.detail
+        .map((error) => {
+          const field = error.loc?.at(-1);
+          const message = error.msg ?? "Invalid value";
+
+          return field ? `${String(field)}: ${message}` : message;
+        })
+        .join(". ");
+    }
+  } catch {
+    // if not JSON
+  }
+
+  return `${fallbackMessage}: ${response.status}`;
+}
 
 //Get doctors
 export async function fetchDoctors(
@@ -91,6 +129,29 @@ export async function getDoctorSlots(
 
   if (!response.ok) {
     throw new Error(`Failed to fetch doctor slots: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// Create slot
+
+export async function createSlot(payload: SlotCreate): Promise<Slot> {
+  const response = await fetch(`${API_BASE}/slots`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const message = await getApiErrorMessage(
+      response,
+      "Failed to create slot"
+    );
+
+    throw new Error(message);
   }
 
   return response.json();
