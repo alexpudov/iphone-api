@@ -1,13 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { fetchDoctorById, updateDoctor, getDoctorSlots, createSlot } from "../api/api";
-import type { Doctor,  DoctorUpdate, Slot, SlotCreate } from "../types/doctors";
+import { fetchDoctorById, updateDoctor, getDoctorSlots, createSlot, patchSlot,} from "../api/api"; //deleteSlot
+import type { Doctor,  DoctorUpdate, Slot, SlotCreate, SlotTimeFields, AppointmentCreate} from "../types/doctors";
+
+import { DoctorUpdateForm } from "../components/doctor/DoctorUpdateForm";
+import { SlotCreateForm } from "../components/slot/SlotCreateForm";
+import { SlotUpdateForm } from "../components/slot/SlotUpdateForm";
 
 export default function DoctorDetailsPage() {
   const { doctorId } = useParams();
 
   const [doctor, setDoctor] = useState<Doctor | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  
+  const [doctorLoadError, setDoctorLoadError] =
+  useState<string | null>(null);
+
+  const [doctorUpdateError, setDoctorUpdateError] =
+  useState<string | null>(null);
 
   const [editDoctor, setEditDoctor] = useState<DoctorUpdate>({
   full_name: "",
@@ -38,7 +47,61 @@ function formatSlotTime(date: string) {
   });
 }
 
-const [slotCreateError, setSlotCreateError] = useState<string | null>(null);
+const [editSlotId, setEditSlotId] = useState<number | null> (null)
+const [editSlot, setEditSlot] = useState({
+  start_time: "",
+  end_time: "",
+});
+
+const [slotCreateError, setSlotCreateError] = useState<string | null> (null);
+const [slotUpdateError, setSlotUpdateError] = useState<string | null> (null);
+
+const [bookingSlotId, setBookingSlotId] = useState<number | null>(null);
+
+const [newAppointment, setNewAppointment] = useState<AppointmentCreate>({
+  slot_id: 0,
+  patient_name: "",
+});
+
+function validateSlotTimes(slot: SlotTimeFields): string | null {
+  if (!slot.start_time || !slot.end_time) {
+    return "Start time and end time are required";
+  }
+
+  const startTime = new Date(slot.start_time);
+  const endTime = new Date(slot.end_time);
+
+  const durationInMilliseconds =
+    endTime.getTime() - startTime.getTime();
+
+  const minimumDurationInMilliseconds =
+    15 * 60 * 1000;
+
+  const maximumDurationInMilliseconds =
+    60 * 60 * 1000;
+
+  if (endTime <= startTime) {
+    return "End time must be after start time";
+  }
+
+  if (
+    durationInMilliseconds <
+    minimumDurationInMilliseconds
+  ) {
+    return "Slot duration must be at least 15 minutes";
+  }
+
+  if (
+    durationInMilliseconds >
+    maximumDurationInMilliseconds
+  ) {
+    return "Slot duration must not exceed one hour";
+  }
+
+  return null;
+}
+
+
 
   useEffect(() => {
     if (isInvalidId) {
@@ -53,9 +116,9 @@ const [slotCreateError, setSlotCreateError] = useState<string | null>(null);
             specialization: data.specialization,
             is_active: data.is_active,
   });
-        setError(null);
+        setDoctorLoadError(null);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => setDoctorLoadError(e.message));
 
       getDoctorSlots(id)
         .then((data) => {
@@ -73,6 +136,46 @@ const [slotCreateError, setSlotCreateError] = useState<string | null>(null);
     return;
   }
 
+  const validateFullName = editDoctor.full_name?.trim() ?? "";
+  const validateSpecialization = editDoctor.specialization?.trim() ?? "";
+  if (
+  !validateFullName ||
+  !validateSpecialization
+) {
+  setDoctorUpdateError("Fields cannot be empty");
+  return;
+}
+ 
+  if (validateFullName.length < 2 || validateSpecialization.length < 2) {
+    setDoctorUpdateError("Fields must be at least 2 characters")
+    return;
+  }
+
+  if (validateFullName.length > 50 || validateSpecialization.length > 50) {
+    setDoctorUpdateError("Fields must be at most 50 characters")
+    return;
+  }
+
+  if (
+  !/^[\p{L}\s]+$/u.test(validateFullName) ||
+  !/^[\p{L}\s]+$/u.test(validateSpecialization)
+) {
+  setDoctorUpdateError(
+    "Fields can contain only letters and spaces"
+  );
+  return;
+}
+
+if (
+  /\s{2,}/.test(validateFullName) || 
+  /\s{2,}/.test(validateSpecialization)) {
+  setDoctorUpdateError(
+    "Only one space is allowed between words"
+  );
+  return;
+}
+
+
   updateDoctor(id, editDoctor)
     .then((updatedDoctor) => {
       setDoctor(updatedDoctor);
@@ -81,9 +184,10 @@ const [slotCreateError, setSlotCreateError] = useState<string | null>(null);
         specialization: updatedDoctor.specialization,
         is_active: updatedDoctor.is_active,
       });
-      setError(null);
+      
+      setDoctorUpdateError(null);
     })
-    .catch((e) => setError(e.message));
+    .catch((e) => setDoctorUpdateError(e.message));
 }
 
 function getErrorMessage(error: unknown): string {
@@ -94,56 +198,22 @@ function getErrorMessage(error: unknown): string {
   return "Something went wrong";
 }
 
-function handleCreateSlot(event: React.FormEvent<HTMLFormElement>) {
+
+function handleCreateSlot(
+  event: React.FormEvent<HTMLFormElement>
+) {
   event.preventDefault();
 
   if (isInvalidId) {
     return;
   }
 
-  if (!newSlot.start_time || !newSlot.end_time) {
-  setSlotCreateError("Start time and end time are required");
-  return;}
+  const validationError = validateSlotTimes(newSlot)
 
-  const startTime = new Date(newSlot.start_time);
-  const endTime = new Date(newSlot.end_time);
-
-  const durationInMilliseconds =
-    endTime.getTime() - startTime.getTime();
-
-  const minimumDurationInMilliseconds =
-    15 * 60 * 1000;
-
-  const maximumDurationInMilliseconds = 60 * 60 * 1000;
-
-  if (
-    durationInMilliseconds <
-    minimumDurationInMilliseconds
-  ) {
-    setSlotCreateError(
-      "Slot duration must be at least 15 minutes"
-    );
+  if (validationError) {
+    setSlotCreateError(validationError);
     return;
   }
-
-  if (
-    durationInMilliseconds >
-    maximumDurationInMilliseconds
-    
-  ) {
-    setSlotCreateError(
-      "Slot duration must not exceed one hour"
-    );
-    return;
-  }
-
-  if (durationInMilliseconds < minimumDurationInMilliseconds) {
-    setSlotCreateError(
-      "Slot duration must be at least 15 minutes"
-    );
-    return;
-  }
-
 
   createSlot({
     ...newSlot,
@@ -164,12 +234,78 @@ function handleCreateSlot(event: React.FormEvent<HTMLFormElement>) {
       setSlotCreateError(null);
     })
     .catch((error: unknown) => {
-      setSlotCreateError(getErrorMessage(error));
+      setSlotCreateError(
+        getErrorMessage(error)
+      );
     });
-
-  
 }
 
+function handleEditSlot(slot: Slot) {
+  setEditSlotId(slot.id);
+
+  setEditSlot({
+    start_time: slot.start_time.slice(0, 16),
+    end_time: slot.end_time.slice(0, 16),
+  });
+
+  setSlotUpdateError(null);
+}
+
+function handleSaveSlot(slotId: number) {
+  const validationError = validateSlotTimes(editSlot);
+
+  if (validationError) {
+    setSlotUpdateError(validationError);
+    return;
+  }
+
+  patchSlot(slotId, editSlot)
+    .then((updatedSlot) => {
+      setSlots((previousSlots) =>
+        previousSlots.map((slot) =>
+          slot.id === slotId ? updatedSlot : slot
+        )
+      );
+
+      setEditSlotId(null);
+
+      setEditSlot({
+        start_time: "",
+        end_time: "",
+      });
+
+      setSlotUpdateError(null);
+    })
+    .catch((error: unknown) => {
+      setSlotUpdateError(getErrorMessage(error));
+    });
+}
+
+function handleCancelEdit() {
+ setEditSlotId(null);
+
+  setEditSlot({
+    start_time: "",
+    end_time: "",
+  });
+}
+
+function handleStartBooking(slot: Slot) {
+  setBookingSlotId(slot.id);
+
+  setNewAppointment({
+    slot_id: slot.id,
+    patient_name: "",
+  });
+}
+
+function handleCreateAppointment() {
+
+}
+
+function handleCancelAppointment() {
+  setBookingSlotId(null);
+}
   return (
     <div className="container">
       <Link to="/">← Back to doctors</Link>
@@ -178,11 +314,11 @@ function handleCreateSlot(event: React.FormEvent<HTMLFormElement>) {
 
       {isInvalidId && <p className="error">Invalid doctor id</p>}
 
-      {!isInvalidId && error && (
-        <p className="error">{error}</p>
+      {!isInvalidId && doctorLoadError && (
+        <p className="error">{doctorLoadError}</p>
       )}
 
-      {!isInvalidId && !error && doctor && (
+      {!isInvalidId && !doctorLoadError && doctor && (
         <div>
           <p>
             <b>ID:</b> {doctor.id}
@@ -204,46 +340,16 @@ function handleCreateSlot(event: React.FormEvent<HTMLFormElement>) {
       )}
 
       {doctor && (
-  <form className="doctor-form" onSubmit={handleUpdateDoctor}>
-    <input
-      type="text"
-      value={editDoctor.full_name ?? ""}
-      onChange={(e) =>
-        setEditDoctor({
-          ...editDoctor,
-          full_name: e.target.value,
-        })
-      }
-    />
-
-    <input
-      type="text"
-      value={editDoctor.specialization ?? ""}
-      onChange={(e) =>
-        setEditDoctor({
-          ...editDoctor,
-          specialization: e.target.value,
-        })
-      }
-    />
-
-    <label className="filter-item">
-      <input
-        type="checkbox"
-        checked={editDoctor.is_active === true}
-        onChange={(e) =>
-          setEditDoctor({
-            ...editDoctor,
-            is_active: e.target.checked,
-          })
-        }
-      />
-      Active
-    </label>
-
-    <button type="submit">Save changes</button>
-  </form>
-)}
+        <DoctorUpdateForm
+          value={editDoctor}
+          error={doctorUpdateError}
+          onChange={(value) => {
+            setEditDoctor(value);
+            setDoctorUpdateError(null);
+          }}
+          onSubmit={handleUpdateDoctor}
+        />
+      )}
 
   {doctor && (
   <div>
@@ -260,65 +366,71 @@ function handleCreateSlot(event: React.FormEvent<HTMLFormElement>) {
         {slots.map((slot) => (
 
           <li key={slot.id}>
-            {formatSlotDate(slot.start_time)},{" "}
-            {formatSlotTime(slot.start_time)} —{" "}
-            {formatSlotTime(slot.end_time)}
-          </li>
+
+            {editSlotId === slot.id ? 
+            (
+              <SlotUpdateForm
+                value={editSlot}
+                error={slotUpdateError}
+                onChange={setEditSlot}
+                onSave={() => handleSaveSlot(slot.id)}
+                onCancel={handleCancelEdit}
+              />
+            ) 
+            
+    : (
+      <>
+        <span>
+          {formatSlotDate(slot.start_time)}{" "}
+          {formatSlotTime(slot.start_time)} —{" "}
+          {formatSlotTime(slot.end_time)}
+        </span>
+
+        <button onClick={() => handleEditSlot(slot)}>
+          Edit
+          </button>
+
+        <button onClick={() => handleStartBooking(slot)}>
+          Book
+        </button>
+
+        {bookingSlotId  === slot.id && (
+          <form className="doctor-form" onSubmit={handleCreateAppointment}>
+
+          <input
+            type="text"
+            value={newAppointment.patient_name}
+            onChange={(e) =>
+              setNewAppointment({
+                ...newAppointment,
+                patient_name: e.target.value,
+              })
+            }
+          />
+
+          <button type="submit"> Book appointment </button>
+          <button type="button" onClick={handleCancelAppointment}> Cancel </button>
+          </form>)}
+      </>
+    )}
+</li>
+          
   ))}
       </ul>
-
     )}
   </div>
 )}
 
 {doctor && (
-  <div className="slot-create-section">
-  <form className="doctor-form" onSubmit={handleCreateSlot}>
-    <h2>Create slot</h2>
-
-    <label>
-      Start time: {" "}
-      <input
-        type="datetime-local"
-        value={newSlot.start_time}
-        onChange={(event) => {
-          setSlotCreateError(null);
-
-          setNewSlot({
-            ...newSlot,
-            start_time: event.target.value,
-          });
-        }}
-      />
-    </label>
-
-    <label>
-      End time: {" "}
-      <input
-        type="datetime-local"
-        value={newSlot.end_time}
-        onChange={(event) => {
-          setSlotCreateError(null);
-
-          setNewSlot({
-            ...newSlot,
-            end_time: event.target.value,
-          });
-        }}
-      />
-    </label>
-
-    <button type="submit">
-      Create slot
-    </button>
-  </form>
-
-  <div className="slot-create-error">
-    {slotCreateError && (
-      <p className="error">{slotCreateError}</p>
-    )}
-  </div>
-</div>
+  <SlotCreateForm
+    value={newSlot}
+    error={slotCreateError}
+    onChange={(value) => {
+      setSlotCreateError(null);
+      setNewSlot(value);
+    }}
+    onSubmit={handleCreateSlot}
+  />
 )}
 
     </div>

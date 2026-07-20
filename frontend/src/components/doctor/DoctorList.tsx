@@ -1,4 +1,4 @@
-import type { Doctor } from "../types/doctors";
+import type { Doctor } from "../../types/doctors";
 import { Link, useLocation  } from "react-router-dom";
 
 type DoctorListProps = {

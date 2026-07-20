@@ -75,7 +75,12 @@ class SlotOut(BaseModel):
     doctor_id: int
     start_time: datetime
     end_time: datetime
- 
+
+class SlotUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    start_time: datetime | None = None
+    end_time: datetime | None = None
 
 class AppointmentCreate(BaseModel):
     slot_id: int

@@ -32,3 +32,13 @@ export type SlotCreate = {
   start_time: string;
   end_time: string;
 };
+
+export type SlotUpdate = Partial<Omit<SlotCreate, "doctor_id">>;
+
+export type SlotTimeFields = Pick<SlotCreate, "start_time" | "end_time">;
+
+export type AppointmentCreate = {
+  slot_id: number;
+  patient_name: string;
+}
+

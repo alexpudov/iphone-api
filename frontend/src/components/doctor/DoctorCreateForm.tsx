@@ -1,4 +1,4 @@
-import type { DoctorCreate } from "../types/doctors";
+import type { DoctorCreate } from "../../types/doctors";
 
 type DoctorCreateFormProps = {
   newDoctor: DoctorCreate;

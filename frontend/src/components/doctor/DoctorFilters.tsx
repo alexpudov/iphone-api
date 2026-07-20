@@ -1,4 +1,4 @@
-import type { DoctorFilters as DoctorFiltersType } from "../types/doctors";
+import type { DoctorFilters as DoctorFiltersType } from "../../types/doctors";
 
 type DoctorFiltersProps = {
   filters: DoctorFiltersType;

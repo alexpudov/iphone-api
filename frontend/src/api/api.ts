@@ -1,4 +1,4 @@
-import type { Doctor, DoctorFilters, DoctorCreate,  DoctorUpdate, Slot, SlotCreate} from "../types/doctors";
+import type { Doctor, DoctorFilters, DoctorCreate,  DoctorUpdate, Slot, SlotCreate, SlotUpdate} from "../types/doctors";
 
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -86,7 +86,11 @@ export async function createDoctor(payload: DoctorCreate): Promise<Doctor> {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create doctor: ${response.status}`);
+    const message = await getApiErrorMessage(
+      response,
+      "Failed to create a doctor"
+    );
+    throw new Error(message);
   }
 
   return response.json();
@@ -96,8 +100,12 @@ export async function createDoctor(payload: DoctorCreate): Promise<Doctor> {
 export async function fetchDoctorById(id: number): Promise<Doctor> {
   const response = await fetch(`${API_BASE}/doctors/${id}`);
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch doctor: ${response.status}`);
+   if (!response.ok) {
+    const message = await getApiErrorMessage(
+      response,
+      "Failed to get doctors"
+    );
+    throw new Error(message);
   }
 
   return response.json();
@@ -116,7 +124,11 @@ export async function updateDoctor(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to update doctor: ${response.status}`);
+    const message = await getApiErrorMessage(
+      response,
+      "Failed to update doctor"
+    );
+    throw new Error(message);
   }
 
   return response.json();
@@ -128,7 +140,11 @@ export async function getDoctorSlots(
   const response = await fetch(`${API_BASE}/slots/doctor/${doctorId}`);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch doctor slots: ${response.status}`);
+    const message = await getApiErrorMessage(
+      response,
+      "Failed to get slots"
+    );
+    throw new Error(message);
   }
 
   return response.json();
@@ -156,3 +172,48 @@ export async function createSlot(payload: SlotCreate): Promise<Slot> {
 
   return response.json();
 }
+
+// Patch slot
+
+export async function patchSlot(
+  slotId: number,
+  payload: SlotUpdate): 
+  Promise<Slot> {
+
+  const response = await fetch(`${API_BASE}/slots/${slotId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const message = await getApiErrorMessage(
+      response,
+      "Failed to patch slot"
+    );
+
+    throw new Error(message);
+  }
+  return response.json()
+
+}
+
+
+// Delete slot
+
+export async function deleteSlot(slotId: number) {
+  
+  const response = await fetch (`${API_BASE}/slots/${slotId}`, {
+    method:"DELETE",
+  })
+
+  if (!response.ok) {
+    const message = await getApiErrorMessage(
+      response,
+      "Failed to delete slot"
+    );
+  throw new Error(message);
+
+}}

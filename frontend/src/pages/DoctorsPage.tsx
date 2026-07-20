@@ -6,9 +6,9 @@ import {
   fetchDoctors,
 } from "../api/api";
 
-import { DoctorCreateForm}  from "../components/DoctorCreateForm";
-import { DoctorFiltersComponent } from "../components/DoctorFilters";
-import { DoctorList } from "../components/DoctorList";
+import { DoctorCreateForm}  from "../components/doctor/DoctorCreateForm";
+import { DoctorFiltersComponent } from "../components/doctor/DoctorFilters";
+import { DoctorList } from "../components/doctor/DoctorList";
 import { Pagination } from "../components/Pagination";
 
 import type {

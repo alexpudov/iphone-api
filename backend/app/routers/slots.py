@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Doctor, Slot, Appointment
-from app.schemas import SlotCreate, SlotOut
+from app.schemas import SlotCreate, SlotOut, SlotUpdate
 
 router = APIRouter(prefix="/slots", tags=["Slots"])
 
@@ -101,3 +101,79 @@ def get_slots_for_doctor(
 
     return q.order_by(Slot.start_time).all()
 
+@router.patch("/{slot_id}", response_model=SlotOut)
+def patch_slot(
+    slot_id: int,
+    payload: SlotUpdate,
+    db: Session = Depends(get_db),
+):
+    slot = db.query(Slot).filter(Slot.id == slot_id).first()
+
+    if not slot:
+        raise HTTPException(
+            status_code=404,
+            detail="Slot not found",
+        )
+
+    data = payload.model_dump(exclude_unset=True)
+
+    if not data:
+        raise HTTPException(
+            status_code=400,
+            detail="No fields to update",
+        )
+
+    new_start_time = data.get("start_time", slot.start_time)
+    new_end_time = data.get("end_time", slot.end_time)
+
+    if new_end_time <= new_start_time:
+        raise HTTPException(
+            status_code=400,
+            detail="End time must be after start time",
+        )
+    
+    minimum_slot_duration = timedelta(minutes=15)
+
+    if new_end_time - new_start_time < minimum_slot_duration:
+        raise HTTPException(
+            status_code=400,
+            detail="Slot duration must be at least 15 minutes",
+    )
+
+    maximum_slot_duration = timedelta(hours=1)
+
+    if new_end_time - new_start_time > maximum_slot_duration:
+        raise HTTPException(
+            status_code=400,
+            detail="Slot duration must not exceed one hour",
+        )
+
+    if new_start_time < datetime.now():
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot create slot in the past",
+        )
+    
+    conflict = (
+    db.query(Slot)
+    .filter(Slot.doctor_id == slot.doctor_id)
+    .filter(Slot.id != slot_id)
+    .filter(
+        Slot.start_time < new_end_time,
+        Slot.end_time > new_start_time,
+    )
+    .first())
+
+    if conflict:
+        raise HTTPException(
+            status_code=409,
+            detail="Slot overlaps with existing slot",
+        )
+
+    for key, value in data.items():
+        setattr(slot, key, value)
+
+    db.commit()
+    db.refresh(slot)
+
+    return slot
