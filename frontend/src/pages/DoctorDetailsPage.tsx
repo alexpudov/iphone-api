@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { fetchDoctorById, updateDoctor, getDoctorSlots, createSlot, patchSlot,} from "../api/api"; //deleteSlot
-import type { Doctor,  DoctorUpdate, Slot, SlotCreate, SlotTimeFields, AppointmentCreate} from "../types/doctors";
+import { fetchDoctorById, updateDoctor, getDoctorSlots, createSlot, patchSlot, createAppointment, fetchAppointments, deleteSlot} from "../api/api"; 
+import type { Doctor,  DoctorUpdate, Slot, SlotCreate, SlotTimeFields, AppointmentCreate, AppointmentOut} from "../types/doctors";
 
 import { DoctorUpdateForm } from "../components/doctor/DoctorUpdateForm";
 import { SlotCreateForm } from "../components/slot/SlotCreateForm";
 import { SlotUpdateForm } from "../components/slot/SlotUpdateForm";
+
+import { getErrorMessage } from "./utils"
 
 export default function DoctorDetailsPage() {
   const { doctorId } = useParams();
@@ -27,7 +29,7 @@ export default function DoctorDetailsPage() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotsError, setSlotsError] = useState<string | null>(null);
 
-  const id = Number(doctorId);
+  const id = Number(doctorId); // Doctor id
   const isInvalidId = !doctorId || Number.isNaN(id);
 
   const [newSlot, setNewSlot] = useState<SlotCreate>({
@@ -35,6 +37,7 @@ export default function DoctorDetailsPage() {
   start_time: "",
   end_time: "",
 });
+
 
 function formatSlotDate(date: string) {
   return new Date(date).toLocaleDateString("ru-RU");
@@ -62,6 +65,10 @@ const [newAppointment, setNewAppointment] = useState<AppointmentCreate>({
   slot_id: 0,
   patient_name: "",
 });
+
+const [appointmentError, setAppointmentError] = useState<string | null> (null);
+
+const [doctorAppointments, setDoctorAppointments] = useState<AppointmentOut[]>([]);
 
 function validateSlotTimes(slot: SlotTimeFields): string | null {
   if (!slot.start_time || !slot.end_time) {
@@ -101,6 +108,31 @@ function validateSlotTimes(slot: SlotTimeFields): string | null {
   return null;
 }
 
+function validatePatientName(value: string): string {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return "Patient name is required";
+  }
+
+  if (trimmedValue.length < 2) {
+    return "Patient name must be at least 2 characters";
+  }
+
+  if (trimmedValue.length > 100) {
+    return "Patient name must be at most 100 characters";
+  }
+
+  if (!/^[\p{L}\s'-]+$/u.test(trimmedValue)) {
+    return "Patient name can contain only letters, spaces, hyphens and apostrophes";
+  }
+
+  if (/\s{2,}/.test(trimmedValue)) {
+    return "Only one space is allowed between words";
+  }
+
+  return "";
+}
 
 
   useEffect(() => {
@@ -118,18 +150,26 @@ function validateSlotTimes(slot: SlotTimeFields): string | null {
   });
         setDoctorLoadError(null);
       })
-      .catch((e) => setDoctorLoadError(e.message));
+      .catch((error) => setDoctorLoadError(getErrorMessage(error)));
 
-      getDoctorSlots(id)
-        .then((data) => {
-          setSlots(data);
-          setSlotsError(null);
-        })
-    .catch((e) => setSlotsError(e.message));
+    getDoctorSlots(id)
+      .then((data) => {
+        setSlots(data);
+        setSlotsError(null);
+      })
+    .catch((error) => setSlotsError(getErrorMessage(error)));
+    
+    fetchAppointments(id)
+      .then((data) => {
+        setDoctorAppointments(data);
+        setAppointmentError(null);
+      })
+  .catch((error) => setAppointmentError(getErrorMessage(error)));
+
   }, [id, isInvalidId]);
 
 
-  function handleUpdateDoctor(e: React.FormEvent<HTMLFormElement>) {
+  const handleUpdateDoctor = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
 
   if (isInvalidId) {
@@ -175,10 +215,16 @@ if (
   return;
 }
 
+const payload: DoctorUpdate = {
+  ...editDoctor,
+  full_name: validateFullName,
+  specialization: validateSpecialization,
+};
 
-  updateDoctor(id, editDoctor)
-    .then((updatedDoctor) => {
-      setDoctor(updatedDoctor);
+try {
+  const updatedDoctor = await updateDoctor(id, payload)
+
+  setDoctor(updatedDoctor);
       setEditDoctor({
         full_name: updatedDoctor.full_name,
         specialization: updatedDoctor.specialization,
@@ -186,22 +232,14 @@ if (
       });
       
       setDoctorUpdateError(null);
-    })
-    .catch((e) => setDoctorUpdateError(e.message));
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Something went wrong";
-}
+} catch (error) {
+  setDoctorUpdateError(getErrorMessage(error))
+}}
 
 
-function handleCreateSlot(
+const handleCreateSlot = async(
   event: React.FormEvent<HTMLFormElement>
-) {
+) => {
   event.preventDefault();
 
   if (isInvalidId) {
@@ -214,13 +252,13 @@ function handleCreateSlot(
     setSlotCreateError(validationError);
     return;
   }
-
-  createSlot({
+try {
+  const createdSlot = await createSlot({
     ...newSlot,
     doctor_id: id,
   })
-    .then((createdSlot) => {
-      setSlots((previousSlots) => [
+
+  setSlots((previousSlots) => [
         ...previousSlots,
         createdSlot,
       ]);
@@ -232,13 +270,11 @@ function handleCreateSlot(
       });
 
       setSlotCreateError(null);
-    })
-    .catch((error: unknown) => {
-      setSlotCreateError(
-        getErrorMessage(error)
-      );
-    });
-}
+
+} catch (error) {
+  setSlotCreateError(
+    getErrorMessage(error));
+}}
 
 function handleEditSlot(slot: Slot) {
   setEditSlotId(slot.id);
@@ -251,7 +287,7 @@ function handleEditSlot(slot: Slot) {
   setSlotUpdateError(null);
 }
 
-function handleSaveSlot(slotId: number) {
+const handleSaveSlot = async (slotId: number) => {
   const validationError = validateSlotTimes(editSlot);
 
   if (validationError) {
@@ -259,9 +295,10 @@ function handleSaveSlot(slotId: number) {
     return;
   }
 
-  patchSlot(slotId, editSlot)
-    .then((updatedSlot) => {
-      setSlots((previousSlots) =>
+  try {
+    const updatedSlot = await patchSlot(slotId, editSlot)
+
+    setSlots((previousSlots) =>
         previousSlots.map((slot) =>
           slot.id === slotId ? updatedSlot : slot
         )
@@ -275,10 +312,10 @@ function handleSaveSlot(slotId: number) {
       });
 
       setSlotUpdateError(null);
-    })
-    .catch((error: unknown) => {
-      setSlotUpdateError(getErrorMessage(error));
-    });
+
+  } catch (error) {
+    setSlotUpdateError(getErrorMessage(error));
+  }
 }
 
 function handleCancelEdit() {
@@ -290,7 +327,48 @@ function handleCancelEdit() {
   });
 }
 
+const handleDeleteSlot = async (slotId: number) => {
+  const confirmed = window.confirm(
+    "Are you sure you want to delete this slot?"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+  try {
+    await deleteSlot(slotId);
+
+    setSlots((prevSlots) =>
+      prevSlots.filter((slot) => slot.id !== slotId)
+    );
+
+    setSlotsError(null);
+  } catch (error) {
+    setSlotsError(
+      getErrorMessage(error)
+    );
+  }
+};
+
 function handleStartBooking(slot: Slot) {
+  if (slot.is_booked) {
+    setAppointmentError("Slot already booked");
+    return;
+  }
+
+  const slotStartTime = new Date(slot.start_time);
+
+  if (slotStartTime < new Date()) {
+    setAppointmentError("Cannot book slot in the past");
+    return;
+  }
+
+  if (!doctor?.is_active) {
+    setAppointmentError("Doctor is not active");
+    return;
+  }
+
+  setAppointmentError(null);
   setBookingSlotId(slot.id);
 
   setNewAppointment({
@@ -299,13 +377,55 @@ function handleStartBooking(slot: Slot) {
   });
 }
 
-function handleCreateAppointment() {
+async function handleCreateAppointment(
+  event: React.FormEvent<HTMLFormElement>
+) {
+  event.preventDefault();
 
+  const patientNameError = validatePatientName(
+    newAppointment.patient_name
+  );
+
+  if (patientNameError) {
+    setAppointmentError(patientNameError);
+    return;
+  }
+
+  try {
+    const createdAppointment = await createAppointment({
+      slot_id: newAppointment.slot_id,
+      patient_name: newAppointment.patient_name.trim(),
+    });
+
+    setSlots((previousSlots) =>
+      previousSlots.map((slot) =>
+        slot.id === createdAppointment.slot_id
+          ? { ...slot, is_booked: true }
+          : slot
+      )
+    );
+
+    setBookingSlotId(null);
+
+    setNewAppointment({
+      slot_id: 0,
+      patient_name: "",
+    });
+
+    setAppointmentError(null);
+  } catch (error) {
+    setAppointmentError(
+      getErrorMessage(error)
+    );
+  }
 }
 
 function handleCancelAppointment() {
   setBookingSlotId(null);
 }
+
+
+
   return (
     <div className="container">
       <Link to="/">← Back to doctors</Link>
@@ -390,8 +510,19 @@ function handleCancelAppointment() {
           Edit
           </button>
 
-        <button onClick={() => handleStartBooking(slot)}>
-          Book
+        <button
+          disabled={slot.is_booked}
+          onClick={() => handleStartBooking(slot)}
+        >
+          {slot.is_booked ? "Booked" : "Book"}
+        </button>
+        {appointmentError && <p className="error">{appointmentError}</p>}
+
+        <button
+          disabled={slot.is_booked}
+          onClick={() => handleDeleteSlot(slot.id)}
+        >
+          Delete
         </button>
 
         {bookingSlotId  === slot.id && (
@@ -409,7 +540,9 @@ function handleCancelAppointment() {
           />
 
           <button type="submit"> Book appointment </button>
+
           <button type="button" onClick={handleCancelAppointment}> Cancel </button>
+
           </form>)}
       </>
     )}
@@ -432,7 +565,29 @@ function handleCancelAppointment() {
     onSubmit={handleCreateSlot}
   />
 )}
+<h2> {doctorAppointments.length > 0 ? "Appointments" : "No appointments"} </h2>
+<ul>
+  {doctorAppointments.map((appointment) => (
+    <li key={appointment.id}>
+  <strong>Appointment №{appointment.id}</strong>
 
+  <div>Patient: {appointment.patient_name}</div>
+  <div>Slot: {appointment.slot.id}</div>
+  <div>
+
+  Created: {" "}
+  {new Date(appointment.created_at).toLocaleDateString("ru-RU")}
+
+  , {" "}
+  {new Date(appointment.created_at).toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}
+
+</div>
+</li>
+  ))}
+</ul>
     </div>
   );
 }

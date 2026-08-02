@@ -76,6 +76,8 @@ class SlotOut(BaseModel):
     start_time: datetime
     end_time: datetime
 
+    is_booked: bool
+
 class SlotUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -86,11 +88,28 @@ class AppointmentCreate(BaseModel):
     slot_id: int
     patient_name: str
 
+# Nested schemas for AppointmentOut
 
-class AppointmentOut(BaseModel):
+class DoctorShortOut(BaseModel):
+    id: int
+    full_name: str
+
     model_config = ConfigDict(from_attributes=True)
 
+
+class SlotAppointmentOut(BaseModel):
     id: int
-    slot_id: int
+    start_time: datetime
+    end_time: datetime
+    doctor: DoctorShortOut
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AppointmentOut(BaseModel):
+    id: int
     patient_name: str
     created_at: datetime
+    slot: SlotAppointmentOut
+
+    model_config = ConfigDict(from_attributes=True)

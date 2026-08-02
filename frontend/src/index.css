@@ -13,6 +13,13 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.container {
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px;
+}
+
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -160,3 +167,4 @@ button:focus-visible {
 .slot-create-error .error {
   margin: 0;
 }
+

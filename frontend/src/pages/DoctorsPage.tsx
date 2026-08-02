@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 
 import {
   createDoctor,
@@ -10,6 +10,8 @@ import { DoctorCreateForm}  from "../components/doctor/DoctorCreateForm";
 import { DoctorFiltersComponent } from "../components/doctor/DoctorFilters";
 import { DoctorList } from "../components/doctor/DoctorList";
 import { Pagination } from "../components/Pagination";
+
+import { getErrorMessage } from "./utils"
 
 import type {
   Doctor,
@@ -54,6 +56,24 @@ export default function DoctorsPage() {
   const offset = filters.offset ?? 0;
 
   const currentPage = Math.floor(offset / limit) + 1;
+
+  function validateTextField(value: string): string {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return "Field cannot be empty";
+  }
+
+  if (!/^[\p{L}\s]+$/u.test(trimmedValue)) {
+    return "Only letters and spaces are allowed";
+  }
+
+  if (/\s{2,}/.test(trimmedValue)) {
+    return "Only one space is allowed between words";
+  }
+
+  return "";
+}
 
   const formErrors = {
     full_name: validateTextField(newDoctor.full_name),
@@ -220,32 +240,8 @@ export default function DoctorsPage() {
           })
         }
       />
+       <Link to="/appointments"> → Go to appointments </Link>
+      
     </div>
   );
-}
-
-function validateTextField(value: string): string {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return "Field cannot be empty";
-  }
-
-  if (!/^[\p{L}\s]+$/u.test(trimmedValue)) {
-    return "Only letters and spaces are allowed";
-  }
-
-  if (/\s{2,}/.test(trimmedValue)) {
-    return "Only one space is allowed between words";
-  }
-
-  return "";
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Something went wrong";
 }

@@ -1,4 +1,15 @@
-import type { Doctor, DoctorFilters, DoctorCreate,  DoctorUpdate, Slot, SlotCreate, SlotUpdate} from "../types/doctors";
+import type { 
+  Doctor,
+  DoctorFilters,
+  DoctorCreate,  
+  DoctorUpdate, 
+  Slot, 
+  SlotCreate, 
+  SlotUpdate, 
+  AppointmentCreate,
+  AppointmentOut,
+
+} from "../types/doctors";
 
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -203,9 +214,79 @@ export async function patchSlot(
 
 // Delete slot
 
-export async function deleteSlot(slotId: number) {
+export async function deleteSlot(slotId: number): Promise<void> {
   
   const response = await fetch (`${API_BASE}/slots/${slotId}`, {
+    method:"DELETE",
+  })
+
+  if (!response.ok) {
+    const message = await getApiErrorMessage(
+      response,
+      "Failed to delete slot"
+    );
+  throw new Error(message);
+
+}}
+
+// Create appointment
+
+export async function createAppointment(
+  payload: AppointmentCreate
+): Promise<AppointmentOut> {
+  const response = await fetch(`${API_BASE}/appointments`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const message = await getApiErrorMessage(
+      response,
+      "Failed to create an appointment"
+    );
+
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+// Get appointments 
+export async function fetchAppointments(
+  doctorId?: number
+): Promise<AppointmentOut[]> {
+  const params = new URLSearchParams();
+
+  if (doctorId !== undefined) {
+    params.set("doctor_id", String(doctorId));
+  }
+
+  const queryString = params.toString();
+
+  const response = await fetch(
+    `${API_BASE}/appointments${queryString ? `?${queryString}` : ""}`
+  );
+
+  if (!response.ok) {
+    const message = await getApiErrorMessage(
+      response,
+      "Failed to load appointments"
+    );
+
+    throw new Error(message);
+  }
+  
+  return response.json();
+}
+
+// Delete appointment
+
+export async function deleteAppointment(appointment_id: number) {
+  
+  const response = await fetch (`${API_BASE}/appointments/${appointment_id}`, {
     method:"DELETE",
   })
 

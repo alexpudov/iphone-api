@@ -81,7 +81,10 @@ def delete_slot(slot_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "slot deleted"}
 
-@router.get("/doctor/{doctor_id}", response_model=list[SlotOut])
+@router.get(
+    "/doctor/{doctor_id}",
+    response_model=list[SlotOut],
+)
 def get_slots_for_doctor(
     doctor_id: int,
     date_: date | None = None,
@@ -93,7 +96,11 @@ def get_slots_for_doctor(
     if date_ is not None:
         start_dt = datetime.combine(date_, time.min)
         end_dt = datetime.combine(date_, time.max)
-        q = q.filter(Slot.start_time >= start_dt, Slot.start_time <= end_dt)
+
+        q = q.filter(
+            Slot.start_time >= start_dt,
+            Slot.start_time <= end_dt,
+        )
 
     if only_free:
         booked_slot_ids = select(Appointment.slot_id)

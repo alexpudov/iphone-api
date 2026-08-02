@@ -25,6 +25,8 @@ export type Slot = {
   doctor_id: number;
   start_time: string;
   end_time: string;
+
+  is_booked: boolean;
 };
 
 export type SlotCreate = {
@@ -40,5 +42,27 @@ export type SlotTimeFields = Pick<SlotCreate, "start_time" | "end_time">;
 export type AppointmentCreate = {
   slot_id: number;
   patient_name: string;
+}
+
+type DoctorShortOut = {
+  id: number
+  full_name: string
+}
+
+type SlotAppointmentOut = {
+  id: number
+  start_time: string
+  end_time: string
+  doctor: DoctorShortOut
+}
+
+
+export type AppointmentOut = {
+  id: number;
+  slot_id: number;
+  patient_name: string;
+  created_at: string;
+  
+  slot: SlotAppointmentOut
 }
 

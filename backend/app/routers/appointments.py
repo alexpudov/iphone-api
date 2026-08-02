@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
 from app.models import Appointment, Slot, Doctor
@@ -39,8 +39,24 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
 
 
 @router.get("", response_model=list[AppointmentOut])
-def list_appointments(db: Session = Depends(get_db)):
-    return db.query(Appointment).order_by(Appointment.id).all()
+def get_appointments(
+    doctor_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(Appointment).options(
+        joinedload(Appointment.slot).joinedload(Slot.doctor)
+    )
+
+    if doctor_id is not None:
+        query = (
+            query
+            .join(Appointment.slot)
+            .filter(Slot.doctor_id == doctor_id)
+        )
+
+    
+
+    return query.order_by(Appointment.created_at.desc()).all()
 
 
 @router.delete("/{appointment_id}")
