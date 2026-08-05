@@ -1,15 +1,26 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom"
-import { fetchAppointments } from "../api/api";
+import { Link } from "react-router-dom";
+import { getErrorMessage } from "./utils";
+
+import {
+  deleteAppointment,
+  fetchAppointments,
+} from "../api/api";
+
 import type { AppointmentOut } from "../types/doctors";
-import { getErrorMessage } from "./utils"
+
+import { AppointmentList } from "../components/appointment/AppointmentList";
+
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] =
     useState<AppointmentOut[]>([]);
 
-  const [error, setError] =
+  const [appointmentsError, setAppointmentsError] =
     useState<string | null>(null);
+
+  const [deletingAppointmentId, setDeletingAppointmentId] =
+    useState<number | null>(null);
 
   useEffect(() => {
     async function loadAppointments() {
@@ -17,81 +28,67 @@ export default function AppointmentsPage() {
         const data = await fetchAppointments();
 
         setAppointments(data);
-        setError(null);
+        setAppointmentsError(null);
       } catch (error: unknown) {
-        setError(getErrorMessage(error));
+        setAppointmentsError(getErrorMessage(error));
       }
     }
 
     loadAppointments();
   }, []);
 
+  async function handleCancelAppointment(
+    appointmentId: number
+  ) {
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this appointment?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingAppointmentId(appointmentId);
+
+      await deleteAppointment(appointmentId);
+
+      setAppointments((previousAppointments) =>
+        previousAppointments.filter(
+          (appointment) =>
+            appointment.id !== appointmentId
+        )
+      );
+
+      setAppointmentsError(null);
+    } catch (error: unknown) {
+      setAppointmentsError(getErrorMessage(error));
+    } finally {
+      setDeletingAppointmentId(null);
+    }
+  }
+
   return (
     <div className="container">
-
-    <Link to="/">← Back to doctors</Link>
+      <Link to="/">← Back to doctors</Link>
 
       <h1>Appointments</h1>
 
-      {error && <p className="error">{error}</p>}
-
-      {!error && appointments.length === 0 && (
-        <p>No appointments.</p>
+      {appointmentsError && (
+        <p className="error">
+          {appointmentsError}
+        </p>
       )}
 
-      <ul>
-        {appointments.map((appointment) => (
-          <li key={appointment.id}>
-            <strong>
-              Appointment №{appointment.id}
-            </strong>
-
-            <div>
-              Patient: {appointment.patient_name}
-            </div>
-
-            <div>
-              Slot: {appointment.slot.id}
-            </div>
-
-              <div>
-
-            Created: {" "}
-            {new Date(appointment.created_at).toLocaleDateString("ru-RU")}
-
-            , {" "}
-            {new Date(appointment.created_at).toLocaleTimeString("ru-RU", {
-                hour: "2-digit",
-                minute: "2-digit",
-            })}
-            
-            <div>
-              Slot start time: {new Date(appointment.slot.start_time).toLocaleTimeString("ru-RU", {
-                hour: "2-digit",
-                minute: "2-digit",
-            })}
-            </div>
-            
-            <div>
-              Slot end time: {new Date(appointment.slot.end_time).toLocaleTimeString("ru-RU", {
-                hour: "2-digit",
-                minute: "2-digit",
-            })}
-            </div>
-
-            <div>
-              Doctor id: {appointment.slot.doctor.id}
-            </div>
-
-             <div>
-              Doctor name: {appointment.slot.doctor.full_name}
-            </div>
-
-
-            </div>
-          </li>
-        ))}
-      </ul>
+      {!appointmentsError && (
+        <AppointmentList
+          appointments={appointments}
+          onCancel={handleCancelAppointment}
+          deletingAppointmentId={
+            deletingAppointmentId
+          }
+        />
+      )}
     </div>
   );
 }

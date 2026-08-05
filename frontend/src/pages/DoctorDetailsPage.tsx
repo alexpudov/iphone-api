@@ -7,7 +7,7 @@ import { DoctorUpdateForm } from "../components/doctor/DoctorUpdateForm";
 import { SlotCreateForm } from "../components/slot/SlotCreateForm";
 import { SlotUpdateForm } from "../components/slot/SlotUpdateForm";
 
-import { getErrorMessage } from "./utils"
+import { getErrorMessage, formatDate, formatTime} from "./utils"
 
 export default function DoctorDetailsPage() {
   const { doctorId } = useParams();
@@ -39,17 +39,6 @@ export default function DoctorDetailsPage() {
 });
 
 
-function formatSlotDate(date: string) {
-  return new Date(date).toLocaleDateString("ru-RU");
-}
-
-function formatSlotTime(date: string) {
-  return new Date(date).toLocaleTimeString("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 const [editSlotId, setEditSlotId] = useState<number | null> (null)
 const [editSlot, setEditSlot] = useState({
   start_time: "",
@@ -69,6 +58,8 @@ const [newAppointment, setNewAppointment] = useState<AppointmentCreate>({
 const [appointmentError, setAppointmentError] = useState<string | null> (null);
 
 const [doctorAppointments, setDoctorAppointments] = useState<AppointmentOut[]>([]);
+
+const [bookSlotID, setBookSlotID] = useState<number | null> (null);
 
 function validateSlotTimes(slot: SlotTimeFields): string | null {
   if (!slot.start_time || !slot.end_time) {
@@ -351,6 +342,9 @@ const handleDeleteSlot = async (slotId: number) => {
 };
 
 function handleStartBooking(slot: Slot) {
+
+  setBookSlotID(slot.id);
+
   if (slot.is_booked) {
     setAppointmentError("Slot already booked");
     return;
@@ -396,14 +390,19 @@ async function handleCreateAppointment(
       slot_id: newAppointment.slot_id,
       patient_name: newAppointment.patient_name.trim(),
     });
-
+    
     setSlots((previousSlots) =>
       previousSlots.map((slot) =>
-        slot.id === createdAppointment.slot_id
+        slot.id === createdAppointment.slot.id
           ? { ...slot, is_booked: true }
           : slot
       )
     );
+
+    setDoctorAppointments((previousAppointments) => [
+    createdAppointment,
+    ...previousAppointments,
+  ]);
 
     setBookingSlotId(null);
 
@@ -501,9 +500,9 @@ function handleCancelAppointment() {
     : (
       <>
         <span>
-          {formatSlotDate(slot.start_time)}{" "}
-          {formatSlotTime(slot.start_time)} —{" "}
-          {formatSlotTime(slot.end_time)}
+          {formatDate(slot.start_time)}{" "}
+          {formatTime(slot.start_time)} —{" "}
+          {formatTime(slot.end_time)}
         </span>
 
         <button onClick={() => handleEditSlot(slot)}>
@@ -511,12 +510,13 @@ function handleCancelAppointment() {
           </button>
 
         <button
-          disabled={slot.is_booked}
+          disabled={slot.is_booked} 
           onClick={() => handleStartBooking(slot)}
         >
           {slot.is_booked ? "Booked" : "Book"}
         </button>
-        {appointmentError && <p className="error">{appointmentError}</p>}
+        
+        {bookSlotID === slot.id && appointmentError && <p className="error">{appointmentError}</p>}
 
         <button
           disabled={slot.is_booked}
@@ -576,13 +576,10 @@ function handleCancelAppointment() {
   <div>
 
   Created: {" "}
-  {new Date(appointment.created_at).toLocaleDateString("ru-RU")}
+  {formatDate(appointment.created_at)}
 
   , {" "}
-  {new Date(appointment.created_at).toLocaleTimeString("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}
+  {formatTime(appointment.created_at)}
 
 </div>
 </li>
