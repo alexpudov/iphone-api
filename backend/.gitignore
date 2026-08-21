@@ -12,4 +12,4 @@ data/iphones.json
 # IDE
 .vscode/
 
-clinic.db
+*.db

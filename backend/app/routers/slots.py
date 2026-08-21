@@ -5,15 +5,21 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Doctor, Slot, Appointment
+from app.models import Doctor, Slot, Appointment, User
 from app.schemas import SlotCreate, SlotOut, SlotUpdate
+from app.dependencies import require_admin
 
 router = APIRouter(prefix="/slots", tags=["Slots"])
 
 
 @router.post("", response_model=SlotOut, status_code=201)
-def create_slot(payload: SlotCreate, db: Session = Depends(get_db)):
+def create_slot(
+    payload: SlotCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)):
+
     doctor = db.query(Doctor).filter(Doctor.id == payload.doctor_id).first()
+
     if not doctor:
         raise HTTPException(
             status_code=404, 
@@ -61,30 +67,36 @@ def create_slot(payload: SlotCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Slot overlaps with existing slot")
 
     slot = Slot(**payload.model_dump())
+
     db.add(slot)
     db.commit()
     db.refresh(slot)
+
     return slot
 
 
 @router.delete("/{slot_id}")
-def delete_slot(slot_id: int, db: Session = Depends(get_db)):
+def delete_slot(
+    slot_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)):
+
     slot = db.query(Slot).filter(Slot.id == slot_id).first()
+
     if not slot:
         raise HTTPException(status_code=404, detail="Slot not found")
 
     appointment = db.query(Appointment).filter(Appointment.slot_id == slot_id).first()
+
     if appointment:
         raise HTTPException(status_code=409, detail="Slot has appointment, cannot delete")
 
     db.delete(slot)
     db.commit()
+
     return {"status": "slot deleted"}
 
-@router.get(
-    "/doctor/{doctor_id}",
-    response_model=list[SlotOut],
-)
+@router.get("/doctor/{doctor_id}", response_model=list[SlotOut],)
 def get_slots_for_doctor(
     doctor_id: int,
     date_: date | None = None,
@@ -113,6 +125,7 @@ def patch_slot(
     slot_id: int,
     payload: SlotUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ):
     slot = db.query(Slot).filter(Slot.id == slot_id).first()
 
@@ -162,14 +175,14 @@ def patch_slot(
         )
     
     conflict = (
-    db.query(Slot)
-    .filter(Slot.doctor_id == slot.doctor_id)
-    .filter(Slot.id != slot_id)
-    .filter(
-        Slot.start_time < new_end_time,
-        Slot.end_time > new_start_time,
-    )
-    .first())
+        db.query(Slot)
+        .filter(Slot.doctor_id == slot.doctor_id)
+        .filter(Slot.id != slot_id)
+        .filter(
+            Slot.start_time < new_end_time,
+            Slot.end_time > new_start_time,
+        )
+        .first())
 
     if conflict:
         raise HTTPException(

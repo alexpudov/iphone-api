@@ -12,7 +12,7 @@ from datetime import datetime
 class Doctor(Base):
     __tablename__ = "doctors"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
     specialization: Mapped[str] = mapped_column(String(60), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -68,6 +68,11 @@ class Appointment(Base):
         primary_key=True,
     )
 
+    user_id: Mapped[int] = mapped_column(
+            ForeignKey("users.id"),
+            nullable=False,
+    )
+
     slot_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("slots.id"),
@@ -90,5 +95,13 @@ class Appointment(Base):
         "Slot",
         back_populates="appointment",
     )
+    
+class User(Base):
+    __tablename__ = "users"
 
- 
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)

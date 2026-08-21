@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, field_validator, Field
+from pydantic import BaseModel, ConfigDict, field_validator, Field, EmailStr
 from datetime import datetime
 
 
@@ -108,8 +108,33 @@ class SlotAppointmentOut(BaseModel):
 
 class AppointmentOut(BaseModel):
     id: int
+    user_id: int
     patient_name: str
     created_at: datetime
     slot: SlotAppointmentOut
 
     model_config = ConfigDict(from_attributes=True)
+
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserOut(BaseModel):
+    id: int
+    email: EmailStr
+    role: str
+    is_active: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str

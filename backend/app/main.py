@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from app.db import engine, Base
-from app.routers import doctors, slots, appointments
+from app.routers import doctors, slots, appointments, auth
 
 Base.metadata.create_all(bind=engine)
 
@@ -20,3 +20,4 @@ app.add_middleware(
 app.include_router(doctors.router)
 app.include_router(slots.router)
 app.include_router(appointments.router)
+app.include_router(auth.router)
