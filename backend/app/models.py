@@ -1,12 +1,9 @@
+from datetime import datetime
 
-from sqlalchemy import Boolean, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
-
-from sqlalchemy import DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import datetime
 
 
 class Doctor(Base):
@@ -21,7 +18,6 @@ class Doctor(Base):
         "Slot",
         back_populates="doctor",
     )
-
 
 
 class Slot(Base):
@@ -60,6 +56,7 @@ class Slot(Base):
     def is_booked(self) -> bool:
         return self.appointment is not None
 
+
 class Appointment(Base):
     __tablename__ = "appointments"
 
@@ -69,8 +66,8 @@ class Appointment(Base):
     )
 
     user_id: Mapped[int] = mapped_column(
-            ForeignKey("users.id"),
-            nullable=False,
+        ForeignKey("users.id"),
+        nullable=False,
     )
 
     slot_id: Mapped[int] = mapped_column(
@@ -95,13 +92,18 @@ class Appointment(Base):
         "Slot",
         back_populates="appointment",
     )
-    
+
+
 class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, nullable=False, index=True
+    )
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.now
+    )

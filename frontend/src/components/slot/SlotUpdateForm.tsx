@@ -1,4 +1,4 @@
-import type { SlotTimeFields } from "../../types/doctors";
+import type { SlotTimeFields } from "../../types/allTypes";
 
 type SlotUpdateFormProps = {
   value: SlotTimeFields;

@@ -1,4 +1,4 @@
-import type { DoctorUpdate } from "../../types/doctors";
+import type { DoctorUpdate } from "../../types/allTypes";
 
 type DoctorUpdateFormProps = {
   value: DoctorUpdate;

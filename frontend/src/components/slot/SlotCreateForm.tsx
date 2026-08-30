@@ -1,4 +1,4 @@
-import type { SlotCreate, } from "../../types/doctors";
+import type { SlotCreate, } from "../../types/allTypes";
 
 type SlotCreateFormProps = {
   value: SlotCreate;

@@ -1,25 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { useAuth } from "../auth/Auth_Context";
+import { createDoctor, fetchDoctors } from "../api/api";
 
-import {
-  createDoctor,
-  fetchDoctors,
-} from "../api/api";
-
-import { DoctorCreateForm}  from "../components/doctor/DoctorCreateForm";
+import { DoctorCreateForm } from "../components/doctor/DoctorCreateForm";
 import { DoctorFiltersComponent } from "../components/doctor/DoctorFilters";
 import { DoctorList } from "../components/doctor/DoctorList";
 import { Pagination } from "../components/Pagination";
 
-import { getErrorMessage } from "./utils"
+import { getErrorMessage } from "./utils";
 
-import type {
-  Doctor,
-  DoctorCreate,
-  DoctorFilters,
-} from "../types/doctors";
+import type { Doctor, DoctorCreate, DoctorFilters } from "../types/allTypes";
 
 export default function DoctorsPage() {
+  const { isAdmin } = useAuth();
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -40,16 +35,13 @@ export default function DoctorsPage() {
     () => ({
       specialization: searchParams.get("specialization") ?? "",
 
-      active:
-        searchParams.get("active") === "true"
-          ? true
-          : undefined,
+      active: searchParams.get("active") === "true" ? true : undefined,
 
       limit: Number(searchParams.get("limit")) || 10,
 
       offset: Number(searchParams.get("offset")) || 0,
     }),
-    [searchParams]
+    [searchParams],
   );
 
   const limit = filters.limit ?? 10;
@@ -58,31 +50,29 @@ export default function DoctorsPage() {
   const currentPage = Math.floor(offset / limit) + 1;
 
   function validateTextField(value: string): string {
-  const trimmedValue = value.trim();
+    const trimmedValue = value.trim();
 
-  if (!trimmedValue) {
-    return "Field cannot be empty";
+    if (!trimmedValue) {
+      return "Field cannot be empty";
+    }
+
+    if (!/^[\p{L}\s]+$/u.test(trimmedValue)) {
+      return "Only letters and spaces are allowed";
+    }
+
+    if (/\s{2,}/.test(trimmedValue)) {
+      return "Only one space is allowed between words";
+    }
+
+    return "";
   }
-
-  if (!/^[\p{L}\s]+$/u.test(trimmedValue)) {
-    return "Only letters and spaces are allowed";
-  }
-
-  if (/\s{2,}/.test(trimmedValue)) {
-    return "Only one space is allowed between words";
-  }
-
-  return "";
-}
 
   const formErrors = {
     full_name: validateTextField(newDoctor.full_name),
     specialization: validateTextField(newDoctor.specialization),
   };
 
-  const isCreateFormValid =
-    !formErrors.full_name &&
-    !formErrors.specialization;
+  const isCreateFormValid = !formErrors.full_name && !formErrors.specialization;
 
   useEffect(() => {
     let ignore = false;
@@ -113,9 +103,7 @@ export default function DoctorsPage() {
     };
   }, [filters, limit]);
 
-  function updateFilters(
-    changedFilters: Partial<DoctorFilters>
-  ) {
+  function updateFilters(changedFilters: Partial<DoctorFilters>) {
     const updatedFilters: DoctorFilters = {
       ...filters,
       ...changedFilters,
@@ -124,10 +112,7 @@ export default function DoctorsPage() {
     const params = new URLSearchParams();
 
     if (updatedFilters.specialization) {
-      params.set(
-        "specialization",
-        updatedFilters.specialization
-      );
+      params.set("specialization", updatedFilters.specialization);
     }
 
     if (updatedFilters.active === true) {
@@ -135,25 +120,17 @@ export default function DoctorsPage() {
     }
 
     if (updatedFilters.limit !== undefined) {
-      params.set(
-        "limit",
-        String(updatedFilters.limit)
-      );
+      params.set("limit", String(updatedFilters.limit));
     }
 
     if (updatedFilters.offset !== undefined) {
-      params.set(
-        "offset",
-        String(updatedFilters.offset)
-      );
+      params.set("offset", String(updatedFilters.offset));
     }
 
     setSearchParams(params);
   }
 
-  function handleCreateDoctor(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
+  function handleCreateDoctor(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setShowCreateErrors(true);
@@ -164,15 +141,11 @@ export default function DoctorsPage() {
 
     createDoctor({
       full_name: newDoctor.full_name.trim(),
-      specialization:
-        newDoctor.specialization.trim(),
+      specialization: newDoctor.specialization.trim(),
       is_active: newDoctor.is_active,
     })
       .then((createdDoctor) => {
-        setDoctors((previousDoctors) => [
-          createdDoctor,
-          ...previousDoctors,
-        ]);
+        setDoctors((previousDoctors) => [createdDoctor, ...previousDoctors]);
 
         setNewDoctor({
           full_name: "",
@@ -186,32 +159,30 @@ export default function DoctorsPage() {
       .catch((error: unknown) => {
         setCreateError(getErrorMessage(error));
       });
-
-    
   }
 
   return (
     <div className="container">
       <h1>Doctors</h1>
 
-      {createError && (
-        <p className="error">{createError}</p>
-      )}
+      {createError && <p className="error">{createError}</p>}
 
-      <DoctorCreateForm
-        newDoctor={newDoctor}
-        formErrors={
-          showCreateErrors
-            ? formErrors
-            : {
-                full_name: "",
-                specialization: "",
-              }
-        }
-        isValid={isCreateFormValid}
-        onChange={setNewDoctor}
-        onSubmit={handleCreateDoctor}
-      />
+      {isAdmin && (
+        <DoctorCreateForm
+          newDoctor={newDoctor}
+          formErrors={
+            showCreateErrors
+              ? formErrors
+              : {
+                  full_name: "",
+                  specialization: "",
+                }
+          }
+          isValid={isCreateFormValid}
+          onChange={setNewDoctor}
+          onSubmit={handleCreateDoctor}
+        />
+      )}
 
       <DoctorFiltersComponent
         filters={filters}
@@ -223,9 +194,7 @@ export default function DoctorsPage() {
         }
       />
 
-      {loadError && (
-        <p className="error">{loadError}</p>
-      )}
+      {loadError && <p className="error">{loadError}</p>}
 
       <DoctorList doctors={doctors} />
 
@@ -240,8 +209,6 @@ export default function DoctorsPage() {
           })
         }
       />
-       <Link to="/appointments"> → Go to appointments </Link>
-      
     </div>
   );
 }

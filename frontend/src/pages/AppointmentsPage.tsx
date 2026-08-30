@@ -1,26 +1,22 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { getErrorMessage } from "./utils";
 
-import {
-  deleteAppointment,
-  fetchAppointments,
-} from "../api/api";
+import { deleteAppointment, fetchAppointments } from "../api/api";
 
-import type { AppointmentOut } from "../types/doctors";
+import type { AppointmentOut } from "../types/allTypes";
 
 import { AppointmentList } from "../components/appointment/AppointmentList";
 
-
 export default function AppointmentsPage() {
-  const [appointments, setAppointments] =
-    useState<AppointmentOut[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentOut[]>([]);
 
-  const [appointmentsError, setAppointmentsError] =
-    useState<string | null>(null);
+  const [appointmentsError, setAppointmentsError] = useState<string | null>(
+    null,
+  );
 
-  const [deletingAppointmentId, setDeletingAppointmentId] =
-    useState<number | null>(null);
+  const [deletingAppointmentId, setDeletingAppointmentId] = useState<
+    number | null
+  >(null);
 
   useEffect(() => {
     async function loadAppointments() {
@@ -37,11 +33,9 @@ export default function AppointmentsPage() {
     loadAppointments();
   }, []);
 
-  async function handleCancelAppointment(
-    appointmentId: number
-  ) {
+  async function handleCancelAppointment(appointmentId: number) {
     const confirmed = window.confirm(
-      "Are you sure you want to cancel this appointment?"
+      "Are you sure you want to cancel this appointment?",
     );
 
     if (!confirmed) {
@@ -55,9 +49,8 @@ export default function AppointmentsPage() {
 
       setAppointments((previousAppointments) =>
         previousAppointments.filter(
-          (appointment) =>
-            appointment.id !== appointmentId
-        )
+          (appointment) => appointment.id !== appointmentId,
+        ),
       );
 
       setAppointmentsError(null);
@@ -70,23 +63,15 @@ export default function AppointmentsPage() {
 
   return (
     <div className="container">
-      <Link to="/">← Back to doctors</Link>
-
       <h1>Appointments</h1>
 
-      {appointmentsError && (
-        <p className="error">
-          {appointmentsError}
-        </p>
-      )}
+      {appointmentsError && <p className="error">{appointmentsError}</p>}
 
       {!appointmentsError && (
         <AppointmentList
           appointments={appointments}
           onCancel={handleCancelAppointment}
-          deletingAppointmentId={
-            deletingAppointmentId
-          }
+          deletingAppointmentId={deletingAppointmentId}
         />
       )}
     </div>

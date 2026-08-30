@@ -1,17 +1,18 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.dependencies import PlainUser
 from app.models import User
-from app.schemas import UserCreate, UserOut, TokenOut, UserLogin
-from app.security import hash_password
+from app.schemas import TokenOut, UserCreate, UserOut
+from app.security import create_access_token, hash_password, verify_password
 
-from app.dependencies import get_current_user
-
-from app.security import verify_password, create_access_token
-
-from fastapi.security import OAuth2PasswordRequestForm
+DbSession = Annotated[Session, Depends(get_db)]
+FormData = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 router = APIRouter(
     prefix="/auth",
@@ -22,13 +23,9 @@ router = APIRouter(
 @router.post("/register", response_model=UserOut)
 def register_user(
     user_data: UserCreate,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ):
-    existing_user = (
-        db.query(User)
-        .filter(User.email == user_data.email)
-        .first()
-    )
+    existing_user = db.query(User).filter(User.email == user_data.email).first()
 
     if existing_user:
         raise HTTPException(
@@ -43,29 +40,26 @@ def register_user(
     )
 
     db.add(user)
+
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
         raise HTTPException(
-            status_code=409,
-            detail="User with this email already exists"
-    )
+            status_code=409, detail="User with this email already exists"
+        )
 
     db.refresh(user)
 
     return user
 
+
 @router.post("/login", response_model=TokenOut)
 def login_user(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
+    form_data: FormData,
+    db: DbSession,
 ):
-    user = (
-        db.query(User)
-        .filter(User.email == form_data.username)
-        .first()
-    )
+    user = db.query(User).filter(User.email == form_data.username).first()
 
     if not user or not verify_password(
         form_data.password,
@@ -83,8 +77,9 @@ def login_user(
         "token_type": "bearer",
     }
 
+
 @router.get("/me", response_model=UserOut)
 def get_me(
-    current_user: User = Depends(get_current_user),
+    current_user: PlainUser,
 ):
     return current_user

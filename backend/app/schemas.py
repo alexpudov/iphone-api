@@ -1,13 +1,11 @@
-from pydantic import BaseModel, ConfigDict, field_validator, Field, EmailStr
+import re
 from datetime import datetime
 
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-
-import re
 
 def validate_doctor_text(value: str) -> str:
     value = value.strip()
-
 
     if not value:
         raise ValueError("Field cannot be empty")
@@ -53,12 +51,13 @@ class DoctorUpdate(BaseModel):
 
         return validate_doctor_text(value)
 
+
 class DoctorOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     full_name: str
-    specialization: str 
+    specialization: str
     is_active: bool
 
 
@@ -78,17 +77,21 @@ class SlotOut(BaseModel):
 
     is_booked: bool
 
+
 class SlotUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     start_time: datetime | None = None
     end_time: datetime | None = None
 
+
 class AppointmentCreate(BaseModel):
     slot_id: int
     patient_name: str
 
+
 # Nested schemas for AppointmentOut
+
 
 class DoctorShortOut(BaseModel):
     id: int
@@ -116,7 +119,6 @@ class AppointmentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
@@ -131,9 +133,11 @@ class UserOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
 
 class TokenOut(BaseModel):
     access_token: str

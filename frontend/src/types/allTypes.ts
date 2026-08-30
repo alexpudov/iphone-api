@@ -42,27 +42,58 @@ export type SlotTimeFields = Pick<SlotCreate, "start_time" | "end_time">;
 export type AppointmentCreate = {
   slot_id: number;
   patient_name: string;
-}
+};
 
 type DoctorShortOut = {
-  id: number
-  full_name: string
-}
+  id: number;
+  full_name: string;
+};
 
 type SlotAppointmentOut = {
-  id: number
-  start_time: string
-  end_time: string
-  doctor: DoctorShortOut
-}
-
+  id: number;
+  start_time: string;
+  end_time: string;
+  doctor: DoctorShortOut;
+};
 
 export type AppointmentOut = {
   id: number;
   slot_id: number;
   patient_name: string;
   created_at: string;
-  
-  slot: SlotAppointmentOut
-}
 
+  slot: SlotAppointmentOut;
+};
+
+export type User = {
+  id: number;
+  email: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type LoginData = {
+  email: string;
+  password: string;
+};
+
+export type TokenResponse = {
+  access_token: string;
+  token_type: string;
+};
+
+export type AuthContextType = {
+  user: User | null;
+  token: string | null;
+  isAuthChecked: boolean;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  loginUser: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+};
+
+export type RegisterData = {
+  email: string;
+  password: string;
+};

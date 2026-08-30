@@ -1,19 +1,20 @@
-import type { 
+import type {
   Doctor,
   DoctorFilters,
-  DoctorCreate,  
-  DoctorUpdate, 
-  Slot, 
-  SlotCreate, 
-  SlotUpdate, 
+  DoctorCreate,
+  DoctorUpdate,
+  Slot,
+  SlotCreate,
+  SlotUpdate,
   AppointmentCreate,
   AppointmentOut,
-
-} from "../types/doctors";
-
+  LoginData,
+  User,
+  TokenResponse,
+  RegisterData,
+} from "../types/allTypes";
 
 const API_BASE = "http://127.0.0.1:8000";
-
 
 type ValidationErrorItem = {
   loc?: Array<string | number>;
@@ -24,9 +25,29 @@ type ApiErrorResponse = {
   detail?: string | ValidationErrorItem[];
 };
 
+export function handleTokenExpired(response: Response) {
+  if (response.status === 401) {
+    localStorage.removeItem("access_token");
+
+    window.dispatchEvent(new Event("auth:unauthorized"));
+  }
+}
+
+export function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem("access_token");
+
+  if (!token) {
+    return {};
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 async function getApiErrorMessage(
   response: Response,
-  fallbackMessage: string
+  fallbackMessage: string,
 ): Promise<string> {
   try {
     const errorData = (await response.json()) as ApiErrorResponse;
@@ -53,12 +74,7 @@ async function getApiErrorMessage(
 }
 
 //Get doctors
-export async function fetchDoctors(
-  params?: DoctorFilters
-
-) :Promise<Doctor[]> 
-
-{
+export async function fetchDoctors(params?: DoctorFilters): Promise<Doctor[]> {
   const url = new URL(`${API_BASE}/doctors`);
 
   if (params?.active !== undefined) {
@@ -86,20 +102,23 @@ export async function fetchDoctors(
   return response.json();
 }
 
-//Create doctor 
+//Create doctor
 export async function createDoctor(payload: DoctorCreate): Promise<Doctor> {
   const response = await fetch(`${API_BASE}/doctors`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(payload),
   });
 
+  handleTokenExpired(response);
+
   if (!response.ok) {
     const message = await getApiErrorMessage(
       response,
-      "Failed to create a doctor"
+      "Failed to create a doctor",
     );
     throw new Error(message);
   }
@@ -111,11 +130,8 @@ export async function createDoctor(payload: DoctorCreate): Promise<Doctor> {
 export async function fetchDoctorById(id: number): Promise<Doctor> {
   const response = await fetch(`${API_BASE}/doctors/${id}`);
 
-   if (!response.ok) {
-    const message = await getApiErrorMessage(
-      response,
-      "Failed to get doctors"
-    );
+  if (!response.ok) {
+    const message = await getApiErrorMessage(response, "Failed to get doctors");
     throw new Error(message);
   }
 
@@ -124,20 +140,23 @@ export async function fetchDoctorById(id: number): Promise<Doctor> {
 // Patch doctor
 export async function updateDoctor(
   id: number,
-  payload: DoctorUpdate
+  payload: DoctorUpdate,
 ): Promise<Doctor> {
   const response = await fetch(`${API_BASE}/doctors/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(payload),
   });
 
+  handleTokenExpired(response);
+
   if (!response.ok) {
     const message = await getApiErrorMessage(
       response,
-      "Failed to update doctor"
+      "Failed to update doctor",
     );
     throw new Error(message);
   }
@@ -145,16 +164,11 @@ export async function updateDoctor(
   return response.json();
 }
 // Get slots
-export async function getDoctorSlots(
-  doctorId: number
-): Promise<Slot[]> {
+export async function getDoctorSlots(doctorId: number): Promise<Slot[]> {
   const response = await fetch(`${API_BASE}/slots/doctor/${doctorId}`);
 
   if (!response.ok) {
-    const message = await getApiErrorMessage(
-      response,
-      "Failed to get slots"
-    );
+    const message = await getApiErrorMessage(response, "Failed to get slots");
     throw new Error(message);
   }
 
@@ -168,15 +182,15 @@ export async function createSlot(payload: SlotCreate): Promise<Slot> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(payload),
   });
 
+  handleTokenExpired(response);
+
   if (!response.ok) {
-    const message = await getApiErrorMessage(
-      response,
-      "Failed to create slot"
-    );
+    const message = await getApiErrorMessage(response, "Failed to create slot");
 
     throw new Error(message);
   }
@@ -188,64 +202,65 @@ export async function createSlot(payload: SlotCreate): Promise<Slot> {
 
 export async function patchSlot(
   slotId: number,
-  payload: SlotUpdate): 
-  Promise<Slot> {
-
+  payload: SlotUpdate,
+): Promise<Slot> {
   const response = await fetch(`${API_BASE}/slots/${slotId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(payload),
   });
 
+  handleTokenExpired(response);
+
   if (!response.ok) {
-    const message = await getApiErrorMessage(
-      response,
-      "Failed to patch slot"
-    );
+    const message = await getApiErrorMessage(response, "Failed to patch slot");
 
     throw new Error(message);
   }
-  return response.json()
-
+  return response.json();
 }
-
 
 // Delete slot
 
 export async function deleteSlot(slotId: number): Promise<void> {
-  
-  const response = await fetch (`${API_BASE}/slots/${slotId}`, {
-    method:"DELETE",
-  })
+  const response = await fetch(`${API_BASE}/slots/${slotId}`, {
+    method: "DELETE",
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  handleTokenExpired(response);
 
   if (!response.ok) {
-    const message = await getApiErrorMessage(
-      response,
-      "Failed to delete slot"
-    );
-  throw new Error(message);
-
-}}
+    const message = await getApiErrorMessage(response, "Failed to delete slot");
+    throw new Error(message);
+  }
+}
 
 // Create appointment
 
 export async function createAppointment(
-  payload: AppointmentCreate
+  payload: AppointmentCreate,
 ): Promise<AppointmentOut> {
   const response = await fetch(`${API_BASE}/appointments`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(payload),
   });
 
+  handleTokenExpired(response);
+
   if (!response.ok) {
     const message = await getApiErrorMessage(
       response,
-      "Failed to create an appointment"
+      "Failed to create an appointment",
     );
 
     throw new Error(message);
@@ -254,9 +269,9 @@ export async function createAppointment(
   return response.json();
 }
 
-// Get appointments 
+// Get appointments
 export async function fetchAppointments(
-  doctorId?: number
+  doctorId?: number,
 ): Promise<AppointmentOut[]> {
   const params = new URLSearchParams();
 
@@ -267,34 +282,96 @@ export async function fetchAppointments(
   const queryString = params.toString();
 
   const response = await fetch(
-    `${API_BASE}/appointments${queryString ? `?${queryString}` : ""}`
+    `${API_BASE}/appointments${queryString ? `?${queryString}` : ""}`,
+    {
+      headers: {
+        ...getAuthHeaders(),
+      },
+    },
   );
+
+  handleTokenExpired(response);
 
   if (!response.ok) {
     const message = await getApiErrorMessage(
       response,
-      "Failed to load appointments"
+      "Failed to load appointments",
     );
 
     throw new Error(message);
   }
-  
+
   return response.json();
 }
 
 // Delete appointment
 
 export async function deleteAppointment(appointment_id: number) {
-  
-  const response = await fetch (`${API_BASE}/appointments/${appointment_id}`, {
-    method:"DELETE",
-  })
+  const response = await fetch(`${API_BASE}/appointments/${appointment_id}`, {
+    method: "DELETE",
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  handleTokenExpired(response);
 
   if (!response.ok) {
     const message = await getApiErrorMessage(
       response,
-      "Failed to delete slot"
+      "Failed to delete appointment",
     );
-  throw new Error(message);
+    throw new Error(message);
+  }
+}
 
-}}
+export async function login(data: LoginData): Promise<TokenResponse> {
+  const formData = new URLSearchParams();
+
+  formData.append("username", data.email);
+  formData.append("password", data.password);
+
+  const response = await fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error("Invalid email or password");
+  }
+
+  return response.json();
+}
+
+export async function fetchMe(token: string): Promise<User> {
+  const response = await fetch(`${API_BASE}/auth/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to get current user");
+  }
+
+  return response.json();
+}
+
+export async function register(data: RegisterData): Promise<User> {
+  const response = await fetch(`${API_BASE}/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error("Registration failed");
+  }
+
+  return response.json();
+}

@@ -1,4 +1,4 @@
-import type { AppointmentOut } from "../../types/doctors";
+import type { AppointmentOut } from "../../types/allTypes";
 
 import { AppointmentItem } from "./AppointmentItem";
 
