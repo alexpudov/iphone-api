@@ -1,4 +1,5 @@
-import type { SlotCreate, } from "../../types/allTypes";
+import type { SlotCreate } from "../../../types/slot";
+import "./SlotCreateForm.css";
 
 type SlotCreateFormProps = {
   value: SlotCreate;
@@ -13,16 +14,16 @@ export function SlotCreateForm({
   onChange,
   onSubmit,
 }: SlotCreateFormProps) {
-
   return (
     <div className="slot-create-section">
-      <form className="doctor-form" onSubmit={onSubmit}>
-        <h2>Create slot</h2>
-
-        <label>
+      <h2>Create slot</h2>
+      <form className="slot-create-form" onSubmit={onSubmit}>
+        <label className="form-field">
           Start time:{" "}
           <input
+            className="datetime-input"
             type="datetime-local"
+            lang="en-GB"
             value={value.start_time}
             onChange={(event) =>
               onChange({
@@ -33,10 +34,12 @@ export function SlotCreateForm({
           />
         </label>
 
-        <label>
+        <label className="form-field">
           End time:{" "}
           <input
+            className="datetime-input"
             type="datetime-local"
+            lang="en-GB"
             value={value.end_time}
             onChange={(event) =>
               onChange({
@@ -47,12 +50,16 @@ export function SlotCreateForm({
           />
         </label>
 
-        <button type="submit">Create slot</button>
+        <button type="submit" className="button button-primary slot-submit">
+          Create slot
+        </button>
       </form>
 
-      <div className="slot-create-error">
-        {error && <p className="error">{error}</p>}
-      </div>
+      {error && (
+        <div className="slot-create-error">
+          {error && <p className="error">{error}</p>}
+        </div>
+      )}
     </div>
   );
 }

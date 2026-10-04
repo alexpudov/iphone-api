@@ -1,25 +1,38 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/Auth_Context";
+import "./navigation.css";
 
 export function Header() {
   const { user, isAdmin, logout } = useAuth();
 
   return (
-    <header>
-      <nav>
-        <Link to="/">Doctors</Link>
-        {" | "}
-        <Link to="/appointments">Appointments</Link>
-      </nav>
+    <header className="header">
+      <div className="header-content">
+        <Link className="header-logo" to="/">
+          Clinic Booking
+        </Link>
 
-      <div>
-        <span>{user?.email}</span>
+        <nav className="header-nav">
+          <Link className="header-link" to="/">
+            Doctors
+          </Link>
 
-        {isAdmin && <span> | Admin</span>}
+          <Link className="header-link" to="/appointments">
+            Appointments
+          </Link>
+        </nav>
 
-        {" | "}
+        <div className="header-user">
+          <div className="header-user-info">
+            <span className="header-email">{user?.email}</span>
 
-        <button onClick={logout}>Logout</button>
+            {isAdmin && <span className="header-role">Admin</span>}
+          </div>
+
+          <button className="button button-secondary" onClick={logout}>
+            Logout
+          </button>
+        </div>
       </div>
     </header>
   );

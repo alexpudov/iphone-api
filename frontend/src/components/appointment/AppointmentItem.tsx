@@ -1,5 +1,6 @@
-import type { AppointmentOut } from "../../types/allTypes";
-import { formatDate, formatTime } from "../../pages/utils";
+import type { AppointmentOut } from "../../types/appointment";
+import { formatDate, formatTime } from "../../utils";
+import "./Appointment.css";
 
 type AppointmentItemProps = {
   appointment: AppointmentOut;
@@ -7,64 +8,42 @@ type AppointmentItemProps = {
   isDeleting: boolean;
 };
 
-
-
 export function AppointmentItem({
   appointment,
   onCancel,
   isDeleting,
 }: AppointmentItemProps) {
   return (
-    <li>
-      <strong>
-        Appointment №{appointment.id}
-      </strong>
+    <tr>
+      <td>{appointment.id}</td>
 
-      <div>
-        Patient: {appointment.patient_name}
-      </div>
+      <td>{appointment.patient_name}</td>
 
-      <div>
-        Doctor:{" "}
-        {appointment.slot.doctor.full_name}
-      </div>
+      <td>{appointment.slot.doctor.full_name}</td>
 
-      <div>
-        Date:{" "}
-        {formatDate(
-          appointment.slot.start_time
-        )}
-      </div>
+      <td>{formatDate(appointment.slot.start_time)}</td>
 
-      <div>
-        Time:{" "}
-        {formatTime(
-          appointment.slot.start_time
-        )}
+      <td>
+        {formatTime(appointment.slot.start_time)}
         {" — "}
-        {formatTime(
-          appointment.slot.end_time
-        )}
-      </div>
+        {formatTime(appointment.slot.end_time)}
+      </td>
 
-      <div>
-        Created:{" "}
-        {formatDate(appointment.created_at)}
-        {" "}
+      <td>
+        {formatDate(appointment.created_at)}{" "}
         {formatTime(appointment.created_at)}
-      </div>
+      </td>
 
-      <button
-        type="button"
-        disabled={isDeleting}
-        onClick={() =>
-          onCancel(appointment.id)
-        }
-      >
-        {isDeleting
-          ? "Cancelling..."
-          : "Cancel appointment"}
-      </button>
-    </li>
+      <td>
+        <button
+          className="button button-danger"
+          type="button"
+          disabled={isDeleting}
+          onClick={() => onCancel(appointment.id)}
+        >
+          {isDeleting ? "Cancelling..." : "Cancel"}
+        </button>
+      </td>
+    </tr>
   );
 }

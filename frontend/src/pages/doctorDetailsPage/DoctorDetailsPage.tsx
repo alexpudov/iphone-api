@@ -1,31 +1,41 @@
-import { useAuth } from "../auth/Auth_Context";
+import "./DoctorDetailsPage.css";
+import { useAuth } from "../../auth/Auth_Context";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { API_BASE } from "../../api/config";
+
 import {
   fetchDoctorById,
   updateDoctor,
+  doctorPhoto,
+} from "../../api/doctorsApi";
+
+import {
   getDoctorSlots,
   createSlot,
   patchSlot,
+  deleteSlot,
+} from "../../api/slotsApi";
+
+import {
   createAppointment,
   fetchAppointments,
-  deleteSlot,
-} from "../api/api";
+} from "../../api/appointmentsApi";
+
+import type { Doctor, DoctorUpdate } from "../../types/doctor";
+
+import type { Slot, SlotCreate, SlotTimeFields } from "../../types/slot";
+
 import type {
-  Doctor,
-  DoctorUpdate,
-  Slot,
-  SlotCreate,
-  SlotTimeFields,
   AppointmentCreate,
   AppointmentOut,
-} from "../types/allTypes";
+} from "../../types/appointment";
 
-import { DoctorUpdateForm } from "../components/doctor/DoctorUpdateForm";
-import { SlotCreateForm } from "../components/slot/SlotCreateForm";
-import { SlotUpdateForm } from "../components/slot/SlotUpdateForm";
+import { DoctorUpdateForm } from "../../components/doctor/DoctorUpdateForm/DoctorUpdateForm";
+import { SlotCreateForm } from "../../components/slot/SlotCreateForm/SlotCreateForm";
+import { SlotUpdateForm } from "../../components/slot/SlotUpdateForm/SlotUpdateForm";
 
-import { getErrorMessage, formatDate, formatTime } from "./utils";
+import { getErrorMessage, formatDate, formatTime } from "../../utils";
 
 export default function DoctorDetailsPage() {
   const { isAdmin } = useAuth();
@@ -81,6 +91,12 @@ export default function DoctorDetailsPage() {
   >([]);
 
   const [bookSlotID, setBookSlotID] = useState<number | null>(null);
+
+  const [photo, setPhoto] = useState<File | null>(null);
+
+  const [photoVersion, setPhotoVersion] = useState(0);
+
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   function validateSlotTimes(slot: SlotTimeFields): string | null {
     if (!slot.start_time || !slot.end_time) {
@@ -407,13 +423,23 @@ export default function DoctorDetailsPage() {
   function handleCancelAppointment() {
     setBookingSlotId(null);
   }
+  async function handleUploadPhoto() {
+    if (!photo || !doctor) return;
+
+    try {
+      const updatedDoctor = await doctorPhoto(doctor.id, photo);
+      setDoctor(updatedDoctor);
+      setPhoto(null);
+      setPhotoVersion((prev) => prev + 1);
+    } catch (error) {
+      setPhotoError(getErrorMessage(error));
+    }
+  }
 
   const now = new Date();
 
   return (
-    <div className="container">
-      <h1>Doctor Details</h1>
-
+    <div className="doctor-details-page">
       {isInvalidId && <p className="error">Invalid doctor id</p>}
 
       {!isInvalidId && doctorLoadError && (
@@ -421,54 +447,119 @@ export default function DoctorDetailsPage() {
       )}
 
       {!isInvalidId && !doctorLoadError && doctor && (
-        <div>
-          <p>
-            <b>ID:</b> {doctor.id}
-          </p>
+        <section className="page-card doctor-info-card">
+          {doctor.image_url && (
+            <div>
+              <img
+                className="doctor-photo"
+                src={`${API_BASE}${doctor.image_url}?v=${photoVersion}`}
+                alt={doctor.full_name}
+              />
 
-          <p>
-            <b>Name:</b> {doctor.full_name}
-          </p>
+              {isAdmin && (
+                <label className="file-upload">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setPhoto(file);
+                    }}
+                  />
 
-          <p>
-            <b>Specialization:</b> {doctor.specialization}
-          </p>
+                  <span className="file-upload-button">Choose new photo</span>
+                </label>
+              )}
 
-          <p>
-            <b>Status:</b> {doctor.is_active ? "active" : "inactive"}
-          </p>
-        </div>
+              {photo && (
+                <div className="replace-photo-block">
+                  <button
+                    className="button button-primary replace"
+                    onClick={handleUploadPhoto}
+                  >
+                    Replace photo
+                  </button>
+                  <p className="error">{photoError}</p>
+                </div>
+              )}
+            </div>
+          )}
+          {!doctor.image_url && (
+            <div className="doctor-photo-upload">
+              <label className="file-upload">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    setPhoto(file);
+                  }}
+                />
+
+                <span className="file-upload-button">Choose photo</span>
+
+                <span className="file-upload-name">
+                  {photo ? photo.name : "No file selected"}
+                </span>
+              </label>
+
+              <button
+                className="button button-primary"
+                onClick={handleUploadPhoto}
+                disabled={!photo}
+              >
+                Upload photo
+              </button>
+              <p className="error">{photoError}</p>
+            </div>
+          )}
+          <div className="doctor-info">
+            <p>
+              <b>Name:</b> {doctor.full_name}
+            </p>
+
+            <p>
+              <b>Specialization:</b> {doctor.specialization}
+            </p>
+
+            <p>
+              <b>Status:</b> {doctor.is_active ? "active" : "inactive"}
+            </p>
+          </div>
+        </section>
       )}
 
       {doctor && isAdmin && (
-        <DoctorUpdateForm
-          value={editDoctor}
-          error={doctorUpdateError}
-          onChange={(value) => {
-            setEditDoctor(value);
-            setDoctorUpdateError(null);
-          }}
-          onSubmit={handleUpdateDoctor}
-        />
+        <section className="page-card">
+          <DoctorUpdateForm
+            value={editDoctor}
+            error={doctorUpdateError}
+            onChange={(value) => {
+              setEditDoctor(value);
+              setDoctorUpdateError(null);
+            }}
+            onSubmit={handleUpdateDoctor}
+          />
+        </section>
       )}
 
       {doctor && (
-        <div>
+        <section className="page-card">
           <h2>Slots</h2>
 
-          {slotsError && <p className="error">{slotsError}</p>}
+          {slotsError && <p className="slot-create-error">{slotsError}</p>}
 
           {!slotsError && slots.length === 0 && (
             <p>No slots for this doctor.</p>
           )}
 
           {!slotsError && slots.length > 0 && (
-            <ul>
+            <ul className="slots-list">
               {slots.map((slot) => {
                 const isPast = new Date(slot.start_time) < now;
 
                 return (
-                  <li key={slot.id}>
+                  <li className="slot-card" key={slot.id}>
                     {isAdmin && editSlotId === slot.id ? (
                       <SlotUpdateForm
                         value={editSlot}
@@ -478,7 +569,7 @@ export default function DoctorDetailsPage() {
                         onCancel={handleCancelEdit}
                       />
                     ) : (
-                      <>
+                      <div>
                         <span>
                           {formatDate(slot.start_time)}{" "}
                           {formatTime(slot.start_time)} —{" "}
@@ -486,12 +577,16 @@ export default function DoctorDetailsPage() {
                         </span>
 
                         {isAdmin && (
-                          <button onClick={() => handleEditSlot(slot)}>
+                          <button
+                            className="button button-secondary"
+                            onClick={() => handleEditSlot(slot)}
+                          >
                             Edit
                           </button>
                         )}
 
                         <button
+                          className="button button-primary"
                           disabled={slot.is_booked || isPast}
                           onClick={() => handleStartBooking(slot)}
                         >
@@ -508,6 +603,7 @@ export default function DoctorDetailsPage() {
 
                         {isAdmin && (
                           <button
+                            className="button button-danger"
                             disabled={slot.is_booked}
                             onClick={() => handleDeleteSlot(slot.id)}
                           >
@@ -532,10 +628,16 @@ export default function DoctorDetailsPage() {
                               }
                             />
 
-                            <button type="submit"> Book appointment </button>
+                            <button
+                              type="submit"
+                              className="button button-primary"
+                            >
+                              {" "}
+                              Book appointment
+                            </button>
 
                             <button
-                              type="button"
+                              className="button button-neutral"
                               onClick={handleCancelAppointment}
                             >
                               {" "}
@@ -543,47 +645,59 @@ export default function DoctorDetailsPage() {
                             </button>
                           </form>
                         )}
-                      </>
+                      </div>
                     )}
                   </li>
                 );
               })}
             </ul>
           )}
-        </div>
+        </section>
       )}
 
       {doctor && isAdmin && (
-        <SlotCreateForm
-          value={newSlot}
-          error={slotCreateError}
-          onChange={(value) => {
-            setSlotCreateError(null);
-            setNewSlot(value);
-          }}
-          onSubmit={handleCreateSlot}
-        />
+        <section className="page-card">
+          <SlotCreateForm
+            value={newSlot}
+            error={slotCreateError}
+            onChange={(value) => {
+              setSlotCreateError(null);
+              setNewSlot(value);
+            }}
+            onSubmit={handleCreateSlot}
+          />
+        </section>
       )}
-      <h2>
-        {" "}
-        {doctorAppointments.length > 0
-          ? "Appointments"
-          : "No appointments"}{" "}
-      </h2>
-      <ul>
-        {doctorAppointments.map((appointment) => (
-          <li key={appointment.id}>
-            <strong>Appointment №{appointment.id}</strong>
+      <section className="page-card">
+        {doctorAppointments.length > 0 ? (
+          <>
+            <h2>Appointments</h2>
 
-            <div>Patient: {appointment.patient_name}</div>
-            <div>Slot: {appointment.slot.id}</div>
-            <div>
-              Created: {formatDate(appointment.created_at)},{" "}
-              {formatTime(appointment.created_at)}
-            </div>
-          </li>
-        ))}
-      </ul>
+            <ul className="appointments-list">
+              {doctorAppointments.map((appointment) => (
+                <li className="appointment-card" key={appointment.id}>
+                  <strong>Appointment №{appointment.id}</strong>
+
+                  <div>Patient: {appointment.patient_name}</div>
+                  <div>Slot: {appointment.slot.id}</div>
+                  <div>
+                    Created: {formatDate(appointment.created_at)},{" "}
+                    {formatTime(appointment.created_at)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <div className="no-appointments">
+            <img
+              className="no-appointments-image"
+              src="/images/no_appointments.png"
+              alt="No appointments"
+            />
+          </div>
+        )}
+      </section>
     </div>
   );
 }

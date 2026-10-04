@@ -1,0 +1,30 @@
+.filters {
+  display: flex;
+  align-items: center;
+
+  gap: 24px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.filter-item input,
+.filter-item select {
+  cursor: pointer;
+}
+
+.filter-item select {
+  min-width: 140px;
+  padding: 6px 10px;
+  font-size: 15px;
+}
+
+.checkbox-filter {
+  gap: 3px;
+}

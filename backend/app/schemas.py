@@ -26,8 +26,8 @@ def validate_doctor_text(value: str) -> str:
 
 
 class DoctorCreate(BaseModel):
-    full_name: str = Field(min_length=2, max_length=50)
-    specialization: str = Field(min_length=2, max_length=50)
+    full_name: str = Field(min_length=4, max_length=50)
+    specialization: str = Field(min_length=5, max_length=50)
     is_active: bool = True
 
     @field_validator("full_name", "specialization")
@@ -59,6 +59,7 @@ class DoctorOut(BaseModel):
     full_name: str
     specialization: str
     is_active: bool
+    image_url: str | None
 
 
 class SlotCreate(BaseModel):
@@ -121,7 +122,37 @@ class AppointmentOut(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=30)
+
+    @field_validator("password")
+    @classmethod
+    def validate_text_fields(cls, value: str) -> str:
+
+        special_symbol = sum(not char.isalnum() for char in value)
+        digits_count = sum(char.isdigit() for char in value)
+
+        if not value:
+            raise ValueError("Password cannot be empty")
+
+        if not re.fullmatch(r"[A-Za-z]+", value):
+            raise ValueError("Password can contain only English letters")
+
+        if special_symbol < 2:
+            raise ValueError("Password must contain at least 2 special characters")
+
+        if digits_count < 2:
+            raise ValueError("Password must contain at least 2 digits")
+
+        if not any(char.isupper() for char in value):
+            raise ValueError("Password must contain at least one uppercase letter")
+
+        if not any(char.islower() for char in value):
+            raise ValueError("Password must contain at least one lowercase letter")
+
+        if any(char.isspace() for char in value):
+            raise ValueError("Password cannot contain spaces")
+
+        return value
 
 
 class UserOut(BaseModel):
@@ -137,8 +168,3 @@ class UserOut(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
-
-
-class TokenOut(BaseModel):
-    access_token: str
-    token_type: str

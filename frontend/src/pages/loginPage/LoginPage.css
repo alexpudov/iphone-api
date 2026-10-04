@@ -1,22 +1,40 @@
 .login-page {
   min-height: 100vh;
+  box-sizing: border-box;
+
   display: flex;
   justify-content: center;
   align-items: center;
 
-  background: linear-gradient(135deg, #eef2ff, #f8fafc);
+  background-image:
+    linear-gradient(
+      rgba(225, 238, 250, 0.25),
+      rgba(225, 238, 250, 0.25)
+    ),
+    url("/images/login_background.png");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
   padding: 20px;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 520px;
 }
 
 .login-form {
   width: 100%;
-  max-width: 400px;
+  box-sizing: border-box;
 
-  background: white;
+  background: rgba(255, 255, 255, 0.94);
   padding: 40px;
   border-radius: 16px;
 
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(6px);
 }
 
 .login-form h1 {
@@ -26,6 +44,48 @@
   color: #1e293b;
 }
 
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 48px;
+}
+.password-toggle {
+  position: absolute;
+
+  top: 50%;
+  right: 14px;
+
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+
+  background: transparent;
+
+  font-size: 18px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition: background-color 0.2s ease;
+}
+
+.password-toggle:hover {
+  background-color: #eef2ff;
+}
 .login-field {
   display: flex;
   flex-direction: column;
@@ -91,3 +151,5 @@
   font-size: 14px;
   text-align: center;
 }
+
+

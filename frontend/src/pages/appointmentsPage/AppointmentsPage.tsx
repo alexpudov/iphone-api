@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { getErrorMessage } from "./utils";
-
-import { deleteAppointment, fetchAppointments } from "../api/api";
-
-import type { AppointmentOut } from "../types/allTypes";
-
-import { AppointmentList } from "../components/appointment/AppointmentList";
+import { getErrorMessage } from "../../utils";
+import {
+  deleteAppointment,
+  fetchAppointments,
+} from "../../api/appointmentsApi";
+import type { AppointmentOut } from "../../types/appointment";
+import { AppointmentList } from "../../components/appointment/AppointmentList";
+import "./AppointmentsPage.css";
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<AppointmentOut[]>([]);

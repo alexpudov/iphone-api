@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -8,8 +8,13 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.dependencies import PlainUser
 from app.models import User
-from app.schemas import TokenOut, UserCreate, UserOut
-from app.security import create_access_token, hash_password, verify_password
+from app.schemas import UserCreate, UserOut
+from app.security import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    create_access_token,
+    hash_password,
+    verify_password,
+)
 
 DbSession = Annotated[Session, Depends(get_db)]
 FormData = Annotated[OAuth2PasswordRequestForm, Depends()]
@@ -54,8 +59,9 @@ def register_user(
     return user
 
 
-@router.post("/login", response_model=TokenOut)
+@router.post("/login")
 def login_user(
+    response: Response,
     form_data: FormData,
     db: DbSession,
 ):
@@ -72,10 +78,16 @@ def login_user(
 
     token = create_access_token(user.id)
 
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-    }
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+
+    return {"message": "Login successful"}
 
 
 @router.get("/me", response_model=UserOut)
@@ -83,3 +95,12 @@ def get_me(
     current_user: PlainUser,
 ):
     return current_user
+
+
+@router.post("/logout")
+def logout_user(response: Response):
+    response.delete_cookie(
+        key="access_token",
+    )
+
+    return {"message": "Logout successful"}

@@ -13,6 +13,10 @@ class Doctor(Base):
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
     specialization: Mapped[str] = mapped_column(String(60), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    image_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
 
     slots = relationship(
         "Slot",

@@ -1,0 +1,79 @@
+.slot-create-section > :first-child {
+  margin-top: 0;
+}
+
+.slot-create-section > :last-child {
+  margin-bottom: 0;
+}
+
+.slot-create-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.datetime-input {
+  width: 220px;
+  height: 42px;
+  box-sizing: border-box;
+
+  padding: 0 12px;
+
+  font-family: inherit;
+  font-size: 14px;
+  color: #334155;
+
+  background-color: #f8fafc;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.datetime-input:hover {
+  border-color: #94a3b8;
+  background-color: white;
+}
+
+.datetime-input:focus {
+  border-color: #2563eb;
+  background-color: white;
+
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.slot-submit {
+  height: 42px;
+}
+
+.slot-create-error {
+  min-height: 24px;
+  margin-top: 8px;
+  padding-left: 10px;
+}
+
+.slot-create-error .error {
+  margin: 0;
+}

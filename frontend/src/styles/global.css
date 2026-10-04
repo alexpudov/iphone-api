@@ -1,0 +1,148 @@
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+a {
+  font-weight: 500;
+  color: var(--color-link);
+  text-decoration: inherit;
+}
+
+a:hover {
+  color: var(--color-link-hover);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+/* Buttons */
+
+.button {
+  padding: 9px var(--spacing-lg);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+
+  transition:
+    background-color var(--transition-normal),
+    transform var(--transition-fast),
+    opacity var(--transition-normal);
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button-primary {
+  background-color: var(--color-primary);
+  color: var(--color-text-light);
+}
+
+.button-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.button-secondary {
+  background-color: var(--color-secondary);
+  color: var(--color-text-light);
+}
+
+.button-secondary:hover:not(:disabled) {
+  background-color: var(--color-secondary-hover);
+}
+
+.button-danger {
+  background-color: var(--color-danger);
+  color: var(--color-text-light);
+}
+
+.button-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-hover);
+}
+
+.button-neutral {
+  background-color: var(--color-neutral);
+  color: var(--color-text-dark);
+}
+
+.button-neutral:hover:not(:disabled) {
+  background-color: var(--color-neutral-hover);
+}
+
+/* Errors */
+
+.error {
+  display: block;
+  min-height: 20px;
+  color: var(--color-error);
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-xs);
+}
+
+.input-error {
+  border: 1px solid var(--color-error);
+  outline: none;
+}
+
+/* Page */
+
+.page-card {
+  width: 100%;
+  max-width: var(--page-max-width);
+  box-sizing: border-box;
+
+  margin-bottom: var(--spacing-2xl);
+  padding: var(--spacing-xl);
+
+  background: var(--color-page-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.page-card > :first-child {
+  margin-top: 0;
+}
+
+.page-card > :last-child {
+  margin-bottom: 0;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: var(--color-background);
+  }
+
+  a:hover {
+    color: var(--color-link-hover-light);
+  }
+}

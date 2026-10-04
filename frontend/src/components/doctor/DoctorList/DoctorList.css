@@ -1,0 +1,73 @@
+.no-markers {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 300px);
+  gap: 10px;
+}
+
+.item {
+  width: 300px;
+}
+
+.doctor-name {
+  display: block;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.doctor-photo-space {
+  width: 300px;
+  height: 220px;
+  padding-bottom: 10px;
+}
+
+.doctor-list-photo {
+  width: 300px;
+  height: 220px;
+
+  object-fit: cover;
+  object-position: top;
+  border-radius: 12px;
+  padding-bottom: 5px;
+
+}
+
+
+.doctor-details-link-button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+
+  margin-top: 16px;
+  padding: 12px 16px;
+
+  text-align: center;
+  text-decoration: none;
+
+  color: #334155;
+  background-color: #dbeafe;
+
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.doctor-details-link-button:hover {
+  background-color: #bfdbfe;
+  border-color: #60a5fa;
+  color: #1e3a5f;
+}
+
+.doctor-details-link-button:active {
+  transform: scale(0.98);
+}

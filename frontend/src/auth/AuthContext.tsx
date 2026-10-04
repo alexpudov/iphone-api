@@ -1,61 +1,50 @@
 import { useEffect, useState } from "react";
 
-import { fetchMe, login } from "../api/api";
-import type { User } from "../types/allTypes";
+import { fetchMe, login, logoutRequest } from "../api/authApi";
+import type { User } from "../types/auth";
 import { AuthContext } from "./Auth_Context";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("access_token"),
-  );
-
-  const [isAuthChecked, setIsAuthChecked] = useState(
-    () => localStorage.getItem("access_token") === null,
-  );
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   const isAuthenticated = user !== null;
   const isAdmin = user?.role === "admin";
 
   useEffect(() => {
-    if (!token) {
-      return;
-    }
-
-    fetchMe(token)
+    fetchMe()
       .then((currentUser) => {
         setUser(currentUser);
       })
 
-      .catch(() => {
-        localStorage.removeItem("access_token");
-        setToken(null);
+      .catch((error) => {
+        console.error("Failed to check authentication:", error);
         setUser(null);
       })
       .finally(() => {
         setIsAuthChecked(true);
       });
-  }, [token]);
+  }, []);
 
   async function loginUser(email: string, password: string) {
-    const tokenResponse = await login({
+    await login({
       email,
       password,
     });
 
-    localStorage.setItem("access_token", tokenResponse.access_token);
+    const currentUser = await fetchMe();
 
-    setToken(tokenResponse.access_token);
-
-    const currentUser = await fetchMe(tokenResponse.access_token);
+    if (!currentUser) {
+      throw new Error("Failed to authenticate user");
+    }
 
     setUser(currentUser);
   }
 
-  function logout() {
-    localStorage.removeItem("access_token");
-    setToken(null);
+  async function logout() {
+    await logoutRequest();
+
     setUser(null);
   }
 
@@ -75,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        token,
         isAuthChecked,
         isAuthenticated,
         isAdmin,

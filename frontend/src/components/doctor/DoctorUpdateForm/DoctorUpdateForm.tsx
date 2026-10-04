@@ -1,4 +1,5 @@
-import type { DoctorUpdate } from "../../types/allTypes";
+import type { DoctorUpdate } from "../../../types/doctor";
+import "./DoctorUpdateForm.css";
 
 type DoctorUpdateFormProps = {
   value: DoctorUpdate;
@@ -12,11 +13,8 @@ export function DoctorUpdateForm({
   onChange,
   onSubmit,
   error,
-  
 }: DoctorUpdateFormProps) {
-
   return (
-  
     <form className="doctor-form" onSubmit={onSubmit}>
       <input
         type="text"
@@ -51,12 +49,13 @@ export function DoctorUpdateForm({
             })
           }
         />
-
         Active
       </label>
 
-      <button type="submit">Save changes</button>
-      
+      <button type="submit" className="button button-primary">
+        Save changes
+      </button>
+
       {error && <p className="error">{error}</p>}
     </form>
   );

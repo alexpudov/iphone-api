@@ -1,16 +1,17 @@
+import "./DoctorsPage.css";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAuth } from "../auth/Auth_Context";
-import { createDoctor, fetchDoctors } from "../api/api";
+import { useAuth } from "../../auth/Auth_Context";
+import { createDoctor, fetchDoctors } from "../../api/doctorsApi";
 
-import { DoctorCreateForm } from "../components/doctor/DoctorCreateForm";
-import { DoctorFiltersComponent } from "../components/doctor/DoctorFilters";
-import { DoctorList } from "../components/doctor/DoctorList";
-import { Pagination } from "../components/Pagination";
+import { DoctorCreateForm } from "../../components/doctor/DoctorCreateForm/DoctorCreateForm";
+import { DoctorFiltersComponent } from "../../components/doctor/DoctorFilters/DoctorFilters";
+import { DoctorList } from "../../components/doctor/DoctorList/DoctorList";
+import { Pagination } from "../../components/pagination/Pagination";
 
-import { getErrorMessage } from "./utils";
+import { getErrorMessage } from "../../utils";
 
-import type { Doctor, DoctorCreate, DoctorFilters } from "../types/allTypes";
+import type { Doctor, DoctorCreate, DoctorFilters } from "../../types/doctor";
 
 export default function DoctorsPage() {
   const { isAdmin } = useAuth();
@@ -37,14 +38,14 @@ export default function DoctorsPage() {
 
       active: searchParams.get("active") === "true" ? true : undefined,
 
-      limit: Number(searchParams.get("limit")) || 10,
+      limit: Number(searchParams.get("limit")) || 3,
 
       offset: Number(searchParams.get("offset")) || 0,
     }),
     [searchParams],
   );
 
-  const limit = filters.limit ?? 10;
+  const limit = filters.limit ?? 3;
   const offset = filters.offset ?? 0;
 
   const currentPage = Math.floor(offset / limit) + 1;
@@ -165,23 +166,24 @@ export default function DoctorsPage() {
     <div className="container">
       <h1>Doctors</h1>
 
-      {createError && <p className="error">{createError}</p>}
-
       {isAdmin && (
-        <DoctorCreateForm
-          newDoctor={newDoctor}
-          formErrors={
-            showCreateErrors
-              ? formErrors
-              : {
-                  full_name: "",
-                  specialization: "",
-                }
-          }
-          isValid={isCreateFormValid}
-          onChange={setNewDoctor}
-          onSubmit={handleCreateDoctor}
-        />
+        <section className="page-card">
+          {createError && <p className="error">{createError}</p>}
+          <DoctorCreateForm
+            newDoctor={newDoctor}
+            formErrors={
+              showCreateErrors
+                ? formErrors
+                : {
+                    full_name: "",
+                    specialization: "",
+                  }
+            }
+            isValid={isCreateFormValid}
+            onChange={setNewDoctor}
+            onSubmit={handleCreateDoctor}
+          />
+        </section>
       )}
 
       <DoctorFiltersComponent

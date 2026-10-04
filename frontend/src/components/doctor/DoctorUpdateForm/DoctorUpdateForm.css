@@ -1,0 +1,25 @@
+.doctor-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.doctor-form input[type="text"] {
+  padding: 6px 10px;
+  font-size: 15px;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.filter-item input,
+.filter-item select {
+  cursor: pointer;
+}

@@ -1,0 +1,37 @@
+.page-card-appointment {
+  width: 100%;
+  max-width: 1000px;
+  box-sizing: border-box;
+  margin-bottom: 24px;
+  padding: 24px;
+
+  background: rgba(225, 238, 250, 0.945);
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+
+  overflow-x: auto;
+}
+
+.appointments-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.appointments-table th,
+.appointments-table td {
+  padding: 14px 12px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid #ccc;
+}
+
+.appointments-table th {
+  font-weight: 600;
+}
+
+.appointments-table th,
+.appointments-table td {
+  padding: 14px 12px;
+  text-align: center;
+  vertical-align: middle;
+}

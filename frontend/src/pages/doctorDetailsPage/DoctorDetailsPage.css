@@ -1,0 +1,159 @@
+.doctor-details-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.doctor-info-card {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.doctor-info-card p {
+  margin: 0;
+}
+
+.doctor-photo {
+  width: 210px;
+  height: 220px;
+
+  object-fit: cover;
+  object-position: top;
+  border-radius: 12px;
+  padding-bottom: 5px;
+}
+
+.file-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 5px;
+}
+
+.file-upload input[type="file"] {
+  display: none;
+}
+
+.file-upload-button,
+.file-upload-name,
+.doctor-photo-upload > .button {
+  width: 210px;
+  height: 42px;
+  box-sizing: border-box;
+
+}
+
+
+.file-upload-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+
+  background-color: #e0effc;
+  color: #2563eb;
+
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: background-color 0.2s ease;
+}
+
+.file-upload-button:hover {
+  background-color: #cfe5f8;
+}
+
+.replace-photo-block {
+  width: 210px;
+}
+
+.replace {
+  margin-bottom: 5px;
+  width: 210px;
+  height: 42px;
+  box-sizing: border-box;
+}
+
+.doctor-photo-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  
+}
+
+.file-upload-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 10px;
+
+  background-color: #f8fafc;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  font-size: 14px;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.doctor-info {
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+
+.slot-create-error {
+  min-height: 24px;
+  margin-top: 8px;
+  padding-left: 10px;
+}
+
+.slot-create-error .error {
+  margin: 0;
+}
+
+.slots-list,
+.appointments-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.slot-card,
+.appointment-card {
+  margin-bottom: 12px;
+  padding: 16px;
+
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 10px;
+}
+
+.no-appointments {
+  width: 100%;
+}
+
+.no-appointments-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+.slot-card button {
+  margin-left: var(--spacing-sm);
+}
+
+.slot-create-section {
+  margin-top: var(--spacing-2xl);
+}

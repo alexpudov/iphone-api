@@ -1,4 +1,5 @@
-import type { SlotTimeFields } from "../../types/allTypes";
+import type { SlotTimeFields } from "../../../types/slot";
+import "./SlotUpdateForm.css";
 
 type SlotUpdateFormProps = {
   value: SlotTimeFields;
@@ -16,8 +17,9 @@ export function SlotUpdateForm({
   onCancel,
 }: SlotUpdateFormProps) {
   return (
-    <>
+    <div className="slot-update-form">
       <input
+        className="datetime-input"
         type="datetime-local"
         value={value.start_time}
         onChange={(event) =>
@@ -29,6 +31,7 @@ export function SlotUpdateForm({
       />
 
       <input
+        className="datetime-input"
         type="datetime-local"
         value={value.end_time}
         onChange={(event) =>
@@ -39,17 +42,21 @@ export function SlotUpdateForm({
         }
       />
 
-      <button type="button" onClick={onSave}>
+      <button className="button button-primary" type="button" onClick={onSave}>
         Save
       </button>
 
-      <button type="button" onClick={onCancel}>
+      <button
+        className="button button-neutral"
+        type="button"
+        onClick={onCancel}
+      >
         Cancel
       </button>
 
       <div className="slot-create-error">
         {error && <p className="error">{error}</p>}
       </div>
-    </>
+    </div>
   );
 }
