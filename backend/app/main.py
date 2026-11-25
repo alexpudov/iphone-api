@@ -4,8 +4,6 @@ from fastapi.staticfiles import StaticFiles
 from app.db import Base, engine
 from app.routers import appointments, auth, doctors, slots
 
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="Clinic Booking")
 
 from fastapi.middleware.cors import CORSMiddleware

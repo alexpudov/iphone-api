@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -24,13 +25,18 @@ def create_doctor(
     db: DbSession,
     current_user: AdminUser,
 ):
-    doctor_exist = (
-        db.query(Doctor).filter(Doctor.full_name == payload.full_name).first()
-    )
-    if doctor_exist:
-        raise HTTPException(status_code=409, detail="Doctor already exist")
+    stmt = select(Doctor).where(Doctor.full_name == payload.full_name)
+
+    doctor_exist = db.scalar(stmt)
+
+    if doctor_exist is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Doctor already exist",
+        )
 
     doctor = Doctor(**payload.model_dump())
+
     db.add(doctor)
     db.commit()
     db.refresh(doctor)
@@ -47,28 +53,36 @@ def list_doctors(
     limit: int = 20,
     offset: int = 0,
 ):
-
-    q = db.query(Doctor)
+    stmt = select(Doctor)
 
     if full_name is not None:
-        q = q.filter(Doctor.full_name.ilike(f"%{full_name}%"))
+        stmt = stmt.where(Doctor.full_name.ilike(f"%{full_name}%"))
 
     if active is not None:
-        q = q.filter(Doctor.is_active == active)
+        stmt = stmt.where(Doctor.is_active == active)
 
     if specialization is not None:
-        q = q.filter(Doctor.specialization.ilike(f"%{specialization}%"))
+        stmt = stmt.where(Doctor.specialization.ilike(f"%{specialization}%"))
 
-    return q.order_by(Doctor.id).limit(limit).offset(offset).all()
+    stmt = stmt.order_by(Doctor.id).limit(limit).offset(offset)
+
+    doctors = db.scalars(stmt).all()
+
+    return doctors
 
 
 @router.get("/{doctor_id}", response_model=DoctorOut)
-def get_doctor(doctor_id: int, db: DbSession):
+def get_doctor(
+    doctor_id: int,
+    db: DbSession,
+):
+    doctor = db.get(Doctor, doctor_id)
 
-    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
-
-    if not doctor:
-        raise HTTPException(status_code=404, detail="Doctor not found")
+    if doctor is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Doctor not found",
+        )
 
     return doctor
 
@@ -80,15 +94,21 @@ def patch_doctor(
     db: DbSession,
     current_user: AdminUser,
 ):
-    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+    doctor = db.get(Doctor, doctor_id)
 
-    if not doctor:
-        raise HTTPException(status_code=404, detail="Doctor not found")
+    if doctor is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Doctor not found",
+        )
 
     data = payload.model_dump(exclude_unset=True)
 
     if not data:
-        raise HTTPException(status_code=400, detail="No fields to update")
+        raise HTTPException(
+            status_code=400,
+            detail="No fields to update",
+        )
 
     for key, value in data.items():
         setattr(doctor, key, value)
@@ -104,7 +124,7 @@ MEDIA_DIR = BASE_DIR / "media" / "doctors"
 
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
-MAX_FILE_SIZE = 2 * 1024 * 1024  # 5 MB
+MAX_FILE_SIZE = 2 * 1024 * 1024
 
 ALLOWED_FORMATS = {
     "JPEG": ".jpg",
@@ -120,9 +140,9 @@ def upload_doctor_photo(
     db: DbSession,
     current_user: AdminUser,
 ):
-    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+    doctor = db.get(Doctor, doctor_id)
 
-    if not doctor:
+    if doctor is None:
         raise HTTPException(
             status_code=404,
             detail="Doctor not found",
@@ -135,13 +155,12 @@ def upload_doctor_photo(
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=413,
-            detail="Image is too large. Maximum size is 5 MB",
+            detail="Image is too large. Maximum size is 2 MB",
         )
 
     # 3. Проверяем, что байты действительно являются изображением
     try:
         image = Image.open(BytesIO(contents))
-
         image.verify()
 
     except (UnidentifiedImageError, OSError):

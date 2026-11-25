@@ -134,8 +134,8 @@ class UserCreate(BaseModel):
         if not value:
             raise ValueError("Password cannot be empty")
 
-        if not re.fullmatch(r"[A-Za-z]+", value):
-            raise ValueError("Password can contain only English letters")
+        if re.search(r"[^\x00-\x7F]", value):
+            raise ValueError("Password can contain only English characters")
 
         if special_symbol < 2:
             raise ValueError("Password must contain at least 2 special characters")

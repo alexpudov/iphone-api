@@ -15,7 +15,6 @@ def get_current_user(
     db: DbSession,
     request: Request,
 ) -> User:
-
     token = request.cookies.get("access_token")
 
     if not token:
@@ -33,9 +32,9 @@ def get_current_user(
             detail="Invalid or expired token",
         )
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.get(User, user_id)
 
-    if not user:
+    if user is None:
         raise HTTPException(
             status_code=401,
             detail="User not found",

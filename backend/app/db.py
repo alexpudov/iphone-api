@@ -1,9 +1,20 @@
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = "sqlite:///./clinic.db"
+env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(env_path)
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not configured")
+
+engine = create_engine(DATABASE_URL)
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

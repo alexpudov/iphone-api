@@ -22,43 +22,61 @@ def create_slot(
     db: DbSession,
     current_user: AdminUser,
 ):
+    doctor = db.get(Doctor, payload.doctor_id)
 
-    doctor = db.query(Doctor).filter(Doctor.id == payload.doctor_id).first()
-
-    if not doctor:
-        raise HTTPException(status_code=404, detail="Doctor not found")
+    if doctor is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Doctor not found",
+        )
 
     if payload.end_time <= payload.start_time:
-        raise HTTPException(status_code=400, detail="End time must be after start time")
+        raise HTTPException(
+            status_code=400,
+            detail="End time must be after start time",
+        )
 
     minimum_slot_duration = timedelta(minutes=15)
 
     if payload.end_time - payload.start_time < minimum_slot_duration:
         raise HTTPException(
-            status_code=400, detail="Slot duration must be at least 15 minutes"
+            status_code=400,
+            detail="Slot duration must be at least 15 minutes",
         )
 
     maximum_slot_duration = timedelta(hours=1)
 
     if payload.end_time - payload.start_time > maximum_slot_duration:
         raise HTTPException(
-            status_code=400, detail="Slot duration must not exceed one hour"
+            status_code=400,
+            detail="Slot duration must not exceed one hour",
         )
 
     if payload.start_time < datetime.now():
-        raise HTTPException(status_code=400, detail="Cannot create slot in the past")
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot create slot in the past",
+        )
 
     if not doctor.is_active:
-        raise HTTPException(status_code=409, detail="Doctor is not active")
+        raise HTTPException(
+            status_code=409,
+            detail="Doctor is not active",
+        )
 
-    conflict = (
-        db.query(Slot)
-        .filter(Slot.doctor_id == payload.doctor_id)
-        .filter(Slot.start_time < payload.end_time, Slot.end_time > payload.start_time)
-        .first()
+    stmt = select(Slot).where(
+        Slot.doctor_id == payload.doctor_id,
+        Slot.start_time < payload.end_time,
+        Slot.end_time > payload.start_time,
     )
-    if conflict:
-        raise HTTPException(status_code=409, detail="Slot overlaps with existing slot")
+
+    conflict = db.scalar(stmt)
+
+    if conflict is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Slot overlaps with existing slot",
+        )
 
     slot = Slot(**payload.model_dump())
 
@@ -75,17 +93,22 @@ def delete_slot(
     db: DbSession,
     current_user: AdminUser,
 ):
+    slot = db.get(Slot, slot_id)
 
-    slot = db.query(Slot).filter(Slot.id == slot_id).first()
-
-    if not slot:
-        raise HTTPException(status_code=404, detail="Slot not found")
-
-    appointment = db.query(Appointment).filter(Appointment.slot_id == slot_id).first()
-
-    if appointment:
+    if slot is None:
         raise HTTPException(
-            status_code=409, detail="Slot has appointment, cannot delete"
+            status_code=404,
+            detail="Slot not found",
+        )
+
+    stmt = select(Appointment).where(Appointment.slot_id == slot_id)
+
+    appointment = db.scalar(stmt)
+
+    if appointment is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Slot has appointment, cannot delete",
         )
 
     db.delete(slot)
@@ -104,22 +127,27 @@ def get_slots_for_doctor(
     date_: date | None = None,
     only_free: bool = False,
 ):
-    q = db.query(Slot).filter(Slot.doctor_id == doctor_id)
+    stmt = select(Slot).where(Slot.doctor_id == doctor_id)
 
     if date_ is not None:
         start_dt = datetime.combine(date_, time.min)
         end_dt = datetime.combine(date_, time.max)
 
-        q = q.filter(
+        stmt = stmt.where(
             Slot.start_time >= start_dt,
             Slot.start_time <= end_dt,
         )
 
     if only_free:
         booked_slot_ids = select(Appointment.slot_id)
-        q = q.filter(~Slot.id.in_(booked_slot_ids))
 
-    return q.order_by(Slot.start_time).all()
+        stmt = stmt.where(~Slot.id.in_(booked_slot_ids))
+
+    stmt = stmt.order_by(Slot.start_time)
+
+    slots = db.scalars(stmt).all()
+
+    return slots
 
 
 @router.patch("/{slot_id}", response_model=SlotOut)
@@ -129,9 +157,9 @@ def patch_slot(
     db: DbSession,
     current_user: AdminUser,
 ):
-    slot = db.query(Slot).filter(Slot.id == slot_id).first()
+    slot = db.get(Slot, slot_id)
 
-    if not slot:
+    if slot is None:
         raise HTTPException(
             status_code=404,
             detail="Slot not found",
@@ -176,18 +204,16 @@ def patch_slot(
             detail="Cannot create slot in the past",
         )
 
-    conflict = (
-        db.query(Slot)
-        .filter(Slot.doctor_id == slot.doctor_id)
-        .filter(Slot.id != slot_id)
-        .filter(
-            Slot.start_time < new_end_time,
-            Slot.end_time > new_start_time,
-        )
-        .first()
+    stmt = select(Slot).where(
+        Slot.doctor_id == slot.doctor_id,
+        Slot.id != slot_id,
+        Slot.start_time < new_end_time,
+        Slot.end_time > new_start_time,
     )
 
-    if conflict:
+    conflict = db.scalar(stmt)
+
+    if conflict is not None:
         raise HTTPException(
             status_code=409,
             detail="Slot overlaps with existing slot",

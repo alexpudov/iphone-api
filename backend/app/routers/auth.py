@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -19,6 +20,7 @@ from app.security import (
 DbSession = Annotated[Session, Depends(get_db)]
 FormData = Annotated[OAuth2PasswordRequestForm, Depends()]
 
+
 router = APIRouter(
     prefix="/auth",
     tags=["Auth"],
@@ -30,9 +32,11 @@ def register_user(
     user_data: UserCreate,
     db: DbSession,
 ):
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    stmt = select(User).where(User.email == user_data.email)
 
-    if existing_user:
+    existing_user = db.scalar(stmt)
+
+    if existing_user is not None:
         raise HTTPException(
             status_code=409,
             detail="User with this email already exists",
@@ -51,7 +55,8 @@ def register_user(
     except IntegrityError:
         db.rollback()
         raise HTTPException(
-            status_code=409, detail="User with this email already exists"
+            status_code=409,
+            detail="User with this email already exists",
         )
 
     db.refresh(user)
@@ -65,9 +70,11 @@ def login_user(
     form_data: FormData,
     db: DbSession,
 ):
-    user = db.query(User).filter(User.email == form_data.username).first()
+    stmt = select(User).where(User.email == form_data.username)
 
-    if not user or not verify_password(
+    user = db.scalar(stmt)
+
+    if user is None or not verify_password(
         form_data.password,
         user.hashed_password,
     ):
